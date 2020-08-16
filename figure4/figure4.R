@@ -4,8 +4,6 @@ library(RColorBrewer)
 library(viridis)
 library(tidyverse)
 
-'%!in%' <- function(x,y)!('%in%'(x,y))
-
 #figure4A
 main_layer <- theme_grey()+theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1,size=7,color=1))
 custom_pallete <- c("grey30","grey90","steelblue1","yellow","pink","green")
@@ -31,14 +29,18 @@ pheatmap(data,color=myColor,cluster_rows=F,fontsize_col=7,breaks=myBreaks,cluste
 cnvs=read.delim('cnvs_anno.txt',header=F)
 colnames(cnvs)=c('chromosome','start','end','segmean','sample','sample1','tissue','chemicals')
 cnvsk=cnvs %>% filter(tissue=='KIDNEY')
-
+pdf("cnvskidney.pdf",height=4,width=26)
 cnFreq(cnvsk,plot_title='KIDNEY TUMOURS',genome='mm10',plotChr=c('chr1','chr2','chr3','chr4','chr5','chr6','chr7','chr8','chr9','chr10','chr11','chr12','chr13','chr14','chr15','chr16','chr17','chr18','chr19'))+scale_y_continuous(limits = c(-1, 1))
+dev.off()
 
 cnvsli=cnvs %>% filter(tissue=='LIVER')
+pdf("cnvsliver.pdf",height=4,width=26)
 cnFreq(cnvsli,plot_title='LIVER TUMOURS',genome='mm10',plotChr=c('chr1','chr2','chr3','chr4','chr5','chr6','chr7','chr8','chr9','chr10','chr11','chr12','chr13','chr14','chr15','chr16','chr17','chr18','chr19'))+scale_y_continuous(limits = c(-1, 1))
+dev.off()
 
 cnvslu=cnvs %>% filter(tissue=='LUNG')
+pdf("cnvslung.pdf",height=4,width=26)
 cnFreq(cnvslu,plot_title='LUNG TUMOURS',genome='mm10',plotChr=c('chr1','chr2','chr3','chr4','chr5','chr6','chr7','chr8','chr9','chr10','chr11','chr12','chr13','chr14','chr15','chr16','chr17','chr18','chr19'))+scale_y_continuous(limits = c(-1, 1))
-
+dev.off() 
 
 
