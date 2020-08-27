@@ -327,7 +327,7 @@ mut_example_multi <- hdp_extract_components(mut_example_multi,min.sample=3)
 #compare mouse indel signatures to human indel signatures...I do not do any normalization because we are working with indels
 sign=mut_example_multi@comp_categ_distn$mean
 #DBS signatures for mouse (normalized)
-dbs=read.delim('DBS_signatures_genome_builds.txt')
+dbs=read.delim('../starting_data/DBS_signatures_genome_builds.txt')
 dbs1=dbs[1:78,2:12]
 rownames(dbs1)=as.matrix(dbs[1:78,1])
 
