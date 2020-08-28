@@ -14,25 +14,6 @@ old and new (PCAWG) COSMIC signatures can be used
 source("signature_decomposition.R")
 ```
 
-upload PCWAG signatures
-```
-cancer_signatures60 = read.table("PCAWG_signatures.txt", sep = "\t", header = TRUE, row.names=1)
-```
-
-upload two of my signatures, the first one is a combination of two signatures (output="SBS5" "SBS8")  
-the second one is a new signature (output=NaN). The second one is computationally intensive and it can take quite a long time.
-```
-mysig=read.table("mysignatures.txt", sep = "\t", header = TRUE, row.names=1)
-```
-
-Exampe: mysig is your input signature
-```
-bestsigs=min_best_cos_sim_signature(mysig[,1],cancer_signatures60)
-```
-
-
-<h2>Dependencies</h2> 
-
 Dependencies are **SignatureEstimation** and **tidyverse** (for  sample_decomposition.R)
 
 you can find **SignatureEstimation** here:  
