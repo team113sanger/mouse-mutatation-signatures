@@ -1,23 +1,10 @@
 #Laura Riva April 2020
 
 library(tidyverse)
-library(MutationalPatterns)
 source('../signature_decomposition/signature_decomposition.R')
 cancer_signatures60 = read.table('../starting_data/PCAWG_signatures.txt', sep = "\t", header = TRUE)
 cancer_signatures60 = as.matrix(cancer_signatures60[,2:66])
 nm=colnames(cancer_signatures60)
-
-sbss<-read.delim('../starting_data/SigProfilerMatrixGenerator_matrices/SBS96.all',header=T,sep='\t',check.names=F)
-sbss1<-sbss[,2:182]
-rownames(sbss1)<-sbss[,1]
-
-samples1<-sort(unique(colnames(sbss1)))
-samples<-c(samples1[1:36],samples1[42:83],samples1[37:41],samples1[84:181])
-
-ind_basechanges<-c(1:4,25:28,49:52,73:76)
-
-mut_mat_m<-sbss1[rownames(sbss1)[c(ind_basechanges,ind_basechanges+4,ind_basechanges+8,ind_basechanges+12,ind_basechanges+16,ind_basechanges+20)],samples]
-
 nhdp=readRDS('mousesignatures_norm.rds')
 
 names=c("A[C>A]A", "A[C>A]C",
