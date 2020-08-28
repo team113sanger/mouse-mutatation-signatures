@@ -74,12 +74,14 @@ for (i in seq(1,4)){
  	indi=str_which(samples,tissues[i])
  	samples1[indi]=tissues[i]}
 totaldinuc=totaldinuc %>% mutate(tissue=samples1)
- 
-fig3a <-totaldinuc %>% mutate(name = fct_relevel(category, namem_ord)) %>% ggplot(aes(x=name, y=number_of_dinucleotides,fill=tissue)) + geom_boxplot(outlier.shape = NA)+geom_jitter(color="black", size=0.5,alpha=0.95)+xlab("")+scale_fill_npg()+theme_light()+theme(axis.text.x=element_text(size = 9, angle = 45, hjust = 0))+theme(axis.text.y=element_text(size = 12))+scale_x_discrete(position = "top")+theme(text = element_text(size = 18))+xlab("tumour type")+ylab("number of dinucleotides")+theme(panel.background = element_blank(),
+
+pdf("Figure3a.pdf",height=6,width=12)
+totaldinuc %>% mutate(name = fct_relevel(category, namem_ord)) %>% ggplot(aes(x=name, y=number_of_dinucleotides,fill=tissue)) + geom_boxplot(outlier.shape = NA)+geom_jitter(color="black", size=0.5,alpha=0.95)+xlab("")+scale_fill_npg()+theme_light()+theme(axis.text.x=element_text(size = 9, angle = 45, hjust = 0))+theme(axis.text.y=element_text(size = 12))+scale_x_discrete(position = "top")+theme(text = element_text(size = 18))+xlab("tumour type")+ylab("number of dinucleotides")+theme(panel.background = element_blank(),
         panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank(),
         axis.line = element_line(colour = "black"),
         panel.border = element_rect(colour = "black", fill=NA, size=0.5))+theme(legend.key = element_rect(fill = "white", colour = "white"))
+dev.off()
 
 ##===========================================================
 #test the difference in the number of snvs for lung and liver
@@ -212,8 +214,9 @@ mm=as.data.frame(mm)
 mm=mm %>% mutate(sample=namem)
 dinucat = gather(mm,Dinucleotides,Contribution, AC:TT)
 
+pdf("Figure3b.pdf",height=6,width=12)
 dinucat %>% mutate(name = fct_relevel(sample, namem_ord)) %>% ggplot(aes(x =name, y =Contribution, fill =Dinucleotides)) + geom_bar(stat="identity", colour = "black")+xlab("")+scale_fill_npg()+theme_light()+theme(axis.text.x=element_text(size = 9, angle = 45, hjust = 0))+theme(axis.text.y=element_text(size = 12))+scale_x_discrete(position = "top")+theme(text = element_text(size = 18))+xlab("tumour type")+ylab("mean number of dinucleotides")
-
+dev.off()
 
 ##===========================================================
 #signature extraction with HDP, 112 samples
@@ -346,8 +349,12 @@ matt=mut_example_multi@comp_dp_distn$mean
 matt=matt[30:141,]
 rownames(matt)=colnames(dinuchdp)
 colnames(matt)=namesig
+pdf("dinucexposurerelative.pdf",height=6,width=18)
 plot_contribution(t(matt), t(mut_example_multi@comp_categ_distn$mean),mode = "relative",coord_flip = F,palette=RColorBrewer::brewer.pal(12, "Paired"))+theme(axis.text.x= element_text(angle = 90, hjust = 1, vjust = 0.5,size=7))
+dev.off()
+pdf("SupplementaryFigure_dinucexposureabsolute.pdf",height=6,width=18)
 plot_contribution(t(matt*colSums(dinuchdp)), t(mut_example_multi@comp_categ_distn$mean),mode = "absolute",coord_flip = F,palette=RColorBrewer::brewer.pal(12, "Paired"))+theme(axis.text.x= element_text(angle = 90, hjust = 1, vjust = 0.5,size=7))
+dev.off()
 
 #signature 3 is confidentially present only in cobalt, in all the cobalt samples 
 #the rest is mainly made up of DBS2
@@ -402,12 +409,14 @@ for (i in seq(1,4)){
 totalindel=totalindel %>% mutate(tissue=samples1)
 
 #with all the points
-fig3c<-totalindel %>% mutate(name = fct_relevel(category, namem_ord)) %>% ggplot(aes(x=name, y=number_of_indels,fill=tissue)) + geom_boxplot(outlier.shape = NA)+geom_jitter(color="black", size=0.5,alpha=0.95)+xlab("")+scale_fill_npg()+theme_light()+theme(axis.text.x=element_text(size = 9, angle = 45, hjust = 0))+theme(axis.text.y=element_text(size = 12))+scale_x_discrete(position = "top")+theme(text = element_text(size = 18))+xlab("tumour type")+ylab("number of indels")+
+pdf("Figure3c.pdf",height=6,width=12)
+totalindel %>% mutate(name = fct_relevel(category, namem_ord)) %>% ggplot(aes(x=name, y=number_of_indels,fill=tissue)) + geom_boxplot(outlier.shape = NA)+geom_jitter(color="black", size=0.5,alpha=0.95)+xlab("")+scale_fill_npg()+theme_light()+theme(axis.text.x=element_text(size = 9, angle = 45, hjust = 0))+theme(axis.text.y=element_text(size = 12))+scale_x_discrete(position = "top")+theme(text = element_text(size = 18))+xlab("tumour type")+ylab("number of indels")+
   theme(panel.background = element_blank(),
         panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank(),
         axis.line = element_line(colour = "black"),
         panel.border = element_rect(colour = "black", fill=NA, size=0.5))+theme(legend.key = element_rect(fill = "white", colour = "white"))
+dev.off()
 
 ##===========================================================
 #test the difference in the number of snvs for lung and liver
@@ -615,5 +624,6 @@ matt=as.data.frame(matt)
 matt=matt %>% mutate(sample=namem)
 mattr=gather(matt,'0','mID1','mID2','mID9','mID3','mID8',key='signature',value='contribution')
 
-fig3d<- mattr %>% mutate(name = fct_relevel(sample, namem_ord)) %>% ggplot(aes(x=factor(name),y=contribution,fill=factor(signature))) +geom_bar(stat="identity", colour = "black")+scale_fill_npg()+theme_light()+theme(axis.text.x=element_text(size = 9, angle = 45, hjust = 0))+theme(axis.text.y=element_text(size = 12))+scale_x_discrete(position = "top")+theme(text = element_text(size = 18))+xlab("tumour type")+ylab("contribution")
-
+pdf("Figure3d.pdf",height=6,width=12)
+mattr %>% mutate(name = fct_relevel(sample, namem_ord)) %>% ggplot(aes(x=factor(name),y=contribution,fill=factor(signature))) +geom_bar(stat="identity", colour = "black")+scale_fill_npg()+theme_light()+theme(axis.text.x=element_text(size = 9, angle = 45, hjust = 0))+theme(axis.text.y=element_text(size = 12))+scale_x_discrete(position = "top")+theme(text = element_text(size = 18))+xlab("tumour type")+ylab("contribution")
+dev.off()
