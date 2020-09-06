@@ -4,17 +4,19 @@ options(stringsAsFactors = F)
 
 #upload the files that I have generated
 replication_time_tsb=read.delim('chemical_replication_tsb_signature_all.txt')
-replication_time_tsb_transcribed=read.delim('replication_time_tsb_transcribed_all.txt')
+#replication_time_tsb_transcribed=read.delim('replication_time_tsb_transcribed_all.txt')
+replication_time_tsb_transcribed=read.delim('chemical_replication_tsb_signature_all_transcribed.txt')
+#I filter 1250 regions (0.7% of the data) without replicationTime values
+replication_time_tsb_transcribed=replication_time_tsb_transcribed %>% filter(replicationTime!='.')
 mutation_types<-c('C > A','C > G','C > T','T > A','T > C','T > G')
 tissues=c('KIDNEY','LIVER','LUNG','STOMACH')
 namesig=c('mSBS5','mSBS40','mSBS19','mSBS_N1','mSBS42','mSBS12','mSBS_N2','mSBS18','mSBS1','mSBS17','mSBS_N3')
 
-
 #analyze transcription strand bias per signature per tissue FIGURE2A
 total_tsb_all=as.data.frame(table(replication_time_tsb_transcribed[,c("signature_t0.5","transcription_strand","mutationtype","tissue")]))
 transcriptionbias=c()
-for (i in 1:11){
-	for (k in 1:4){ 
+for (k in 1:4){
+	for (i in 1:11){ 
 	for (j in 1:6){
 			t1=total_tsb_all %>% filter(signature_t0.5==namesig[i]) %>% filter(tissue==tissues[k]) %>% filter(mutationtype==mutation_types[j]) %>% filter(transcription_strand=='transcribed strand')
 			t2=total_tsb_all %>% filter(signature_t0.5==namesig[i]) %>% filter(tissue==tissues[k]) %>% filter(mutationtype==mutation_types[j]) %>% filter(transcription_strand=='untranscribed strand')
@@ -24,10 +26,37 @@ for (i in 1:11){
 		}
 }}
 transcriptionbias=as.data.frame(transcriptionbias)
-colnames(transcriptionbias)=c('tissue','signature_t0.5.','mutationtype','transcribed','nontranscribed','p_value')
+colnames(transcriptionbias)=c('tissue','signature_t0.5','mutationtype','transcribed','nontranscribed','p_value')
 transcriptionbias$q_value=p.adjust(transcriptionbias$p_value,method="BH")
 transcriptionbias=transcriptionbias %>% mutate('enrichment'=(as.numeric(transcribed))/as.numeric(nontranscribed))
 write.table(transcriptionbias,'transcriptionbias_signature_mutationtype_0.5_tissue.txt',quote=F,sep='\t',row.names=F,col.names=T)
+
+
+#supplementary table
+sbss<-read.delim('../starting_data/SigProfilerMatrixGenerator_matrices/SBS96.all',header=T,sep='\t',check.names=F)
+sbss1<-sbss[,2:182]
+rownames(sbss1)<-sbss[,1]
+samples1<-sort(unique(colnames(sbss1)))
+samples<-c(samples1[1:36],samples1[42:83],samples1[37:41],samples1[84:181])
+replication_time_tsb_transcribed=read.delim('chemical_replication_tsb_signature_all_transcribed.txt')
+total_tsb_all=as.data.frame(table(replication_time_tsb_transcribed[,c("sample","signature_t0.5","transcription_strand","mutationtype")]))
+transcriptionbias=c()
+for (k in 1:length(samples)){
+	for (i in 1:length(namesig)){
+		for (j in 1:6){
+			t1=total_tsb_all %>% filter(signature_t0.5==namesig[i]) %>% filter(sample==samples[k]) %>% filter(mutationtype==mutation_types[j]) %>% filter(transcription_strand=='transcribed strand')
+			t2=total_tsb_all %>% filter(signature_t0.5==namesig[i]) %>% filter(sample==samples[k]) %>% filter(mutationtype==mutation_types[j]) %>% filter(transcription_strand=='untranscribed strand')
+			if ((t1$Freq>0 | t2$Freq>0) & (t1$Freq+t2$Freq>=50)){
+						pval=binom.test(c(as.numeric(t1$Freq),as.numeric(t2$Freq)))$p.value
+			transcriptionbias=rbind(transcriptionbias,c(samples[k],as.character(namesig[i]),mutation_types[j],t1$Freq,t2$Freq,pval))}
+		}
+}}
+transcriptionbias=as.data.frame(transcriptionbias)
+colnames(transcriptionbias)=c('sample','signature_t0.5','mutationtype','transcribed','nontranscribed','p_value')
+transcriptionbias$q_value=p.adjust(transcriptionbias$p_value,method="BH")
+transcriptionbias=transcriptionbias %>% mutate('enrichment'=(as.numeric(transcribed))/as.numeric(nontranscribed))
+write.table(transcriptionbias,'transcriptionbiaspersample.txt',quote=F,sep='\t',row.names=F,col.names=T)
+
 
 #replication time bias per signature per tissue FIGURE2C
 replication_time_tsb=replication_time_tsb %>%filter(replicationTime!='.')
@@ -66,10 +95,11 @@ total_tsb_all_reptest$replicationTimeplot[which(total_tsb_all_reptest$replicatio
 total_tsb_all_reptest$replicationTimeplot[which(total_tsb_all_reptest$replicationTimeplot==9)]=10
 total_tsb_all_reptest1=as.data.frame(table(total_tsb_all_reptest))
 
+
 replicationtimebias=c()
+for (k in 1:4){
 for (i in 1:length(namesig))
 { for (j in 1:6) 
-	for (k in 1:4){
 	{t1=total_tsb_all_reptest1 %>% filter(signature_t0.5==namesig[i]) %>% filter(tissue==tissues[k]) %>% filter(mutationtype==mutation_types[j]) %>% filter(replicationTimeplot=='1')
 	 t2=total_tsb_all_reptest1 %>% filter(signature_t0.5==namesig[i]) %>% filter(tissue==tissues[k]) %>% filter(mutationtype==mutation_types[j]) %>% filter(replicationTimeplot=='10')
 	 if ((t1$Freq>0 | t2$Freq>0) & (t1$Freq+t2$Freq>=50)){
@@ -84,19 +114,36 @@ replicationtimebias=replicationtimebias %>% mutate('enrichment'=(as.numeric(earl
 write.table(replicationtimebias,'replicationtimebias_mutationType_t0.5_tissue.txt',quote=F,sep='\t',row.names=F,col.names=T)
 
 
+#supplementary table
+total_tsb_all_rep=replication_time_tsb[,c("sample","signature_t0.5","replicationTimeplot","mutationtype")]
+total_tsb_all_reptest=total_tsb_all_rep %>% filter(as.numeric(replicationTimeplot) <4 | as.numeric(replicationTimeplot)>7)
+total_tsb_all_reptest$replicationTimeplot[which(total_tsb_all_reptest$replicationTimeplot==2)]=1
+total_tsb_all_reptest$replicationTimeplot[which(total_tsb_all_reptest$replicationTimeplot==3)]=1
+total_tsb_all_reptest$replicationTimeplot[which(total_tsb_all_reptest$replicationTimeplot==8)]=10
+total_tsb_all_reptest$replicationTimeplot[which(total_tsb_all_reptest$replicationTimeplot==9)]=10
+total_tsb_all_reptest1=as.data.frame(table(total_tsb_all_reptest))
+replicationtimebias=c()
+for (k in 1:length(samples)){
+for (i in 1:length(namesig))
+{ for (j in 1:6) 
+	{t1=total_tsb_all_reptest1 %>% filter(sample==samples[k]) %>% filter(signature_t0.5==namesig[i]) %>% filter(mutationtype==mutation_types[j]) %>% filter(replicationTimeplot=='1')
+	 t2=total_tsb_all_reptest1 %>% filter(sample==samples[k]) %>% filter(signature_t0.5==namesig[i]) %>% filter(mutationtype==mutation_types[j]) %>% filter(replicationTimeplot=='10')
+	 if ((t1$Freq>0 | t2$Freq>0) & ((t1$Freq+t2$Freq)>=50)){
+	 pval=binom.test(c(as.numeric(t1$Freq),as.numeric(t2$Freq)),p=0.46)$p.value
+	 replicationtimebias=rbind(replicationtimebias,c(as.character(samples[k]),as.character(namesig[i]),mutation_types[j],t1$Freq,t2$Freq,pval))
+	 }
+}}}
+
+replicationtimebias=as.data.frame(replicationtimebias)
+colnames(replicationtimebias)=c('sample','signature_t0.5','Mutation_type','early','late','p_value')
+replicationtimebias$q_value=p.adjust(replicationtimebias$p_value,method="BH")
+replicationtimebias=replicationtimebias %>% mutate('enrichment'=(as.numeric(early)/as.numeric(late)))
+write.table(replicationtimebias,'replicationtimebiaspersample.txt',quote=F,sep='\t',row.names=F,col.names=T)
+
+
+
 #plot the figures 2a and 2C
 #first read the files that I have saved
-limits <-function(qval) {
-	sig=vector(mode='numeric',length=length(qval))
-	for (i in seq(1,length(qval))){
-	if (qval[i]>0.85){sig[i]=0.1}
-	else if (qval[i]>0.01 & qval[i]<=0.85 ){sig[i]=0.25}
-	else if (qval[i]>0.0001 & qval[i]<=0.01 ){sig[i]=0.75}	
-	else if (qval[i]<=0.0001 ){sig[i]=1}	
-	}
-	return(sig)
-}
-
 limits2 <-function(qval) {
 	sig=vector(mode='numeric',length=length(qval))
 	for (i in seq(1,length(qval))){
@@ -136,8 +183,8 @@ consider=rev(consider)
 rep<-read.delim('replicationtimebias_mutationType_t0.5_tissue.txt')
 tra<-read.delim('transcriptionbias_signature_mutationtype_0.5_tissue.txt')
 
-tra <- transcriptionbias %>% mutate(type=paste(tissue,signature_t0.5.,sep='_'))
-rep <- replicationtimebias %>% mutate(type=paste(tissue,signature_t0.5,sep='_'))
+tra <- tra %>% mutate(type=paste(tissue,signature_t0.5,sep='_'))
+rep <- rep %>% mutate(type=paste(tissue,signature_t0.5,sep='_'))
 tra <- tra %>% mutate(significance=limits2(q_value))
 tra <- tra %>% filter(type %in% consider)
 rep <- rep %>% mutate(significance=limits2(q_value))
@@ -149,6 +196,7 @@ t1.rect1 <- data.frame (xmin=1.5, xmax=2.5, ymin=0.5, ymax=22.5)
 t2.rect1 <- data.frame (xmin=3.5, xmax=4.5, ymin=0.5, ymax=22.5)
 t3.rect1 <- data.frame (xmin=5.5, xmax=6.5, ymin=0.5, ymax=22.5)
 
+pdf("Figure2a.pdf",height=11,width=10)
 spot.theme <- list(
     theme_classic(),
     theme(axis.ticks.x=element_blank(), axis.text.x=element_text(size = 13)),
@@ -180,8 +228,9 @@ p +
   geom_hline(yintercept=17.5,color = "white",size=1)+  geom_hline(yintercept=18.5,color = "white",size=1)+geom_hline(yintercept=19.5,color = "white",size=1)+
   geom_hline(yintercept=20.5,color = "white",size=1)+  geom_hline(yintercept=21.5,color = "white",size=1)+
   geom_vline(xintercept=0.5,color ="gray",size=1)+geom_vline(xintercept=6.5,color = "gray",size=1)
-  
+dev.off()  
 
+pdf("Figure2c.pdf",height=11,width=10)
 spot.theme <- list(
     theme_classic(),
     theme(axis.ticks.x=element_blank(), axis.text.x=element_text(size = 13)),
@@ -209,7 +258,8 @@ p +
   geom_hline(yintercept=17.5,color = "white",size=1)+  geom_hline(yintercept=18.5,color = "white",size=1)+geom_hline(yintercept=19.5,color = "white",size=1)+
   geom_hline(yintercept=20.5,color = "white",size=1)+  geom_hline(yintercept=21.5,color = "white",size=1)+
   geom_vline(xintercept=0.5,color ="gray",size=1)+geom_vline(xintercept=6.5,color = "gray",size=1)
-  
+
+dev.off()  
 #Signature 17 had the largest median strand asymmetry (sixth largest log2 ratio of the two strands) and also was one of the signatures with the strongest correlations with replication timing https://genomebiology.biomedcentral.com/articles/10.1186/s13059-018-1509-y  
 
 
