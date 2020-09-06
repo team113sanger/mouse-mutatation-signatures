@@ -1,6 +1,9 @@
 #Laura Riva April 2020
 
 library(tidyverse)
+library(ggsci)
+
+
 source('../signature_decomposition/signature_decomposition.R')
 cancer_signatures60 = read.table('../starting_data/PCAWG_signatures.txt', sep = "\t", header = TRUE)
 cancer_signatures60 = as.matrix(cancer_signatures60[,2:66])
@@ -20,6 +23,7 @@ names=c("A[C>A]A", "A[C>A]C",
 "G[T>C]G", "G[T>C]T", "T[T>C]A", "T[T>C]C", "T[T>C]G", "T[T>C]T", "A[T>G]A", "A[T>G]C",
 "A[T>G]G", "A[T>G]T", "C[T>G]A", "C[T>G]C", "C[T>G]G", "C[T>G]T", "G[T>G]A", "G[T>G]C",
 "G[T>G]G", "G[T>G]T", "T[T>G]A", "T[T>G]C", "T[T>G]G", "T[T>G]T")
+
 
 humandata1=read.csv('allWGS.96.csv',check.names=FALSE)
 humandata=humandata1[,3:4647]
@@ -85,9 +89,202 @@ tumwes_42_0.05=which(wes_0.05[,'SBS42']==0 & colSums(humanWES)>=200)
 tumwes_N1_0.05=which(wes_0.05[,'SBS_N1']==0 & colSums(humanWES)>=200)
 tumwes_N2_0.05=which(wes_0.05[,'SBS_N2']==0 & colSums(humanWES)>=200)
 
-#write table 
-#write samples
+wgs_0.05_19=matrix(1,nrow=length(tumwgs_19_0.05),ncol=1)
+rownames(wgs_0.05_19)=names(tumwgs_19_0.05)
+for (i in seq(1,length(tumwgs_19_0.05))){
+	wgs_0.05_19[i]=findSigExposures(humandata[,tumwgs_19_0.05[i]], sigtest)$exposures['SBS19',]
+}
+wes_0.05_19=matrix(1,nrow=length(tumwes_19_0.05),ncol=1)
+rownames(wes_0.05_19)=names(tumwes_19_0.05)
+for (i in seq(1,length(tumwes_19_0.05))){
+	wes_0.05_19[i]=findSigExposures(humanWES[,tumwes_19_0.05[i]], sigtest)$exposures['SBS19',]
+}
+nwgs=length(tumwgs_19_0.05)
+nwes=length(tumwes_19_0.05)
+pp=rbind(cbind(wgs_0.05_19*colSums(humandata[,tumwgs_19_0.05]),rep('WGS',nwgs),rep('SBS19',nwgs)),cbind(wes_0.05_19*colSums(humanWES[,tumwes_19_0.05]),rep('WES',nwes),rep('SBS19',nwes)))
 
+wgs_0.05_42=matrix(1,nrow=length(tumwgs_42_0.05),ncol=1)
+rownames(wgs_0.05_42)=names(tumwgs_42_0.05)
+for (i in seq(1,length(tumwgs_42_0.05))){
+	wgs_0.05_42[i]=findSigExposures(humandata[,tumwgs_42_0.05[i]], sigtest)$exposures['SBS42',]
+}
+wes_0.05_42=matrix(1,nrow=length(tumwes_42_0.05),ncol=1)
+rownames(wes_0.05_42)=names(tumwes_42_0.05)
+for (i in seq(1,length(tumwes_42_0.05))){
+	wes_0.05_42[i]=findSigExposures(humanWES[,tumwes_42_0.05[i]], sigtest)$exposures['SBS42',]
+}
+nwgs=length(tumwgs_42_0.05)
+nwes=length(tumwes_42_0.05)
+pp=rbind(pp,cbind(wgs_0.05_42*sum(humandata[,tumwgs_42_0.05]),rep('WGS',nwgs),rep('SBS42',nwgs)),cbind(wes_0.05_42*colSums(humanWES[,tumwes_42_0.05]),rep('WES',nwes),rep('SBS42',nwes)))
+
+
+wgs_0.05_N1=matrix(1,nrow=length(tumwgs_N1_0.05),ncol=1)
+rownames(wgs_0.05_N1)=names(tumwgs_N1_0.05)
+for (i in seq(1,length(tumwgs_N1_0.05))){
+	wgs_0.05_N1[i]=findSigExposures(humandata[,tumwgs_N1_0.05[i]], sigtest)$exposures['SBS_N1',]
+}
+nwgs=length(tumwgs_N1_0.05)
+pp=rbind(pp,cbind(wgs_0.05_N1*colSums(humandata[,tumwgs_N1_0.05]),rep('WGS',nwgs),rep('mSBS_N1',nwgs)))
+
+wgs_0.05_N2=matrix(1,nrow=length(tumwgs_N2_0.05),ncol=1)
+rownames(wgs_0.05_N2)=names(tumwgs_N2_0.05)
+for (i in seq(1,length(tumwgs_N2_0.05))){
+	wgs_0.05_N2[i]=findSigExposures(humandata[,tumwgs_N2_0.05[i]], sigtest)$exposures['SBS_N2',]
+}
+wes_0.05_N2=matrix(1,nrow=length(tumwes_N2_0.05),ncol=1)
+rownames(wes_0.05_N2)=names(tumwes_N2_0.05)
+for (i in seq(1,length(tumwes_N2_0.05))){
+	wes_0.05_N2[i]=findSigExposures(humanWES[,tumwes_N2_0.05[i]], sigtest)$exposures['SBS_N2',]
+}
+nwgs=length(tumwgs_N2_0.05)
+nwes=length(tumwes_N2_0.05)
+pp=rbind(pp,cbind(wgs_0.05_N2*colSums(humandata[,tumwgs_N2_0.05]),rep('WGS',nwgs),rep('mSBS_N2',nwgs)),cbind(wes_0.05_N2*colSums(humanWES[,tumwes_N2_0.05]),rep('WES',nwes),rep('mSBS_N2',nwes)))
+
+d<-data.frame('mutations'=as.numeric(pp[,1]),'sequencing'=as.factor(pp[,2]),'treatment'=as.factor(pp[,3]),Sample=rownames(pp))
+d<-d %>%mutate(tumour=str_extract(Sample,':'))
+d<-d %>%mutate(tumour=str_split_fixed(Sample,':',n=2)[,1])
+d<-d %>%mutate(tumour=str_replace_all(d$tumour,'CA','Ca'))
+d<-d %>%mutate(tumour=str_replace_all(d$tumour,'Sarcoma-bone','Bone-Sarcoma'))
+d<-d %>%mutate(tumour=as.factor(tumour))
+
+# This script plots the data for Figure 5A as a series of Pie Charts
+# Set the run parameters:
+params <- list(
+    'count.scale' = c('WES'=50, 'WGS'=2500),
+    'col.palette' = pal_npg(palette='nrc', alpha=1)(6),
+    'shape.palette' = c(15, 16, 17),
+    'treatment.order' = c('SBS19', 'SBS42', 'mSBS_N1', 'mSBS_N2'),
+    'log.y' = TRUE
+)
+
+# Load the cancer types:
+cancer.types <- read.table('cancer-types.txt', sep='\t', header=TRUE, row.names=1, colClasses=c('character', rep('factor', 3)))
+
+# Load the raw data:
+d$mutations.mb <- d$mutations / params$count.scale[as.character(d$sequencing)]
+d$treatment <- factor(d$treatment, levels=params$treatment.order) # Reorder treatments into the correct order
+
+# Reorder the individual samples in each treatment by increasing mutation rate:
+d <- do.call(rbind, lapply(levels(d$treatment), function(treatment){
+    x <- d[d$treatment == treatment,]
+    x <- x[order(x$mutations.mb), ]
+    x$index <- 1:nrow(x)
+    return(x)
+}))
+
+# Build the shape and colour ramps for the different cancer types:
+point.types <- expand.grid('colour'=params$col.palette, 'shape'=params$shape.palette, stringsAsFactors=FALSE)
+if(nlevels(cancer.types$tissue) > nrow(point.types)) stop('not enough rows in point.types!')
+point.types <- point.types[1:nlevels(cancer.types$tissue),]
+rownames(point.types) <- levels(cancer.types$tissue)
+
+# Define the colour and shape vectors:
+type.colours <- point.types$colour
+type.shapes <- point.types$shape
+names(type.colours) <- names(type.shapes) <- rownames(point.types)
+
+# Set the cancer tissue and types:
+d$tissue <- cancer.types[as.character(d$tumour), 'tissue']
+
+# Build and generate the output plot:
+g <- ggplot(d, aes(x=index, y=mutations.mb, colour=tissue, shape=tissue))
+g <- g + geom_point()
+if(identical(params$log.y, TRUE)){
+    g <- g + scale_y_log10(expand=expand_scale(mult=0.1))
+} else {
+    g <- g + scale_y_continuous(expand=expand_scale(mult=0.1))
+}
+g <- g + facet_grid(rows=vars(treatment))
+g <- g + theme(axis.text.x=element_blank(), axis.ticks.x=element_blank())
+g <- g + theme(panel.background=element_blank(), panel.border=element_rect(fill=NA))
+g <- g + scale_colour_manual(values=type.colours)
+g <- g + scale_shape_manual(values=type.shapes)
+g <- g + labs(y=expression(Mutations/Mb), x='')
+g <- g + theme(legend.position='right', legend.direction='vertical', legend.key=element_blank(), legend.key.size=unit(0.1, 'cm'), strip.background=element_blank())
+ggsave(plot=g, file='figure-5A.pdf', device=cairo_pdf, width=6, height=3)
+
+
+
+#write table pvalues
+#I had to correct this table manually because I realized that samples with different nams were part of the same tumour type
+tumwgs_19_0.05=table(tolower(active_signatures$Cancer.Types[which(wgs_0.05[,'SBS19']==0 & colSums(humandata)>=200)]))
+tumwgs_42_0.05=table(tolower(active_signatures$Cancer.Types[which(wgs_0.05[,'SBS42']==0 & colSums(humandata)>=200)]))
+tumwgs_N1_0.05=table(tolower(active_signatures$Cancer.Types[which(wgs_0.05[,'SBS_N1']==0 & colSums(humandata)>=200)]))
+tumwgs_N2_0.05=table(tolower(active_signatures$Cancer.Types[which(wgs_0.05[,'SBS_N2']==0 & colSums(humandata)>=200)]))
+
+tumwes_19_0.05=table(tolower(activeWES$Type[which(wes_0.05[,'SBS19']==0 & colSums(humanWES)>=200)]))
+tumwes_42_0.05=table(tolower(activeWES$Type[which(wes_0.05[,'SBS42']==0 & colSums(humanWES)>=200)]))
+tumwes_N1_0.05=table(tolower(activeWES$Type[which(wes_0.05[,'SBS_N1']==0 & colSums(humanWES)>=200)]))
+tumwes_N2_0.05=table(tolower(activeWES$Type[which(wes_0.05[,'SBS_N2']==0 & colSums(humanWES)>=200)]))
+
+tum_19_0.05=table(c(tolower(active_signatures$Cancer.Types[which(wgs_0.05[,'SBS19']==0 & colSums(humandata)>=200)]),tolower(activeWES$Type[which(wes_0.05[,'SBS19']==0 & colSums(humanWES)>=200)])))
+tum_42_0.05=table(c(tolower(active_signatures$Cancer.Types[which(wgs_0.05[,'SBS42']==0 & colSums(humandata)>=200)]),tolower(activeWES$Type[which(wes_0.05[,'SBS42']==0 & colSums(humanWES)>=200)])))
+tum_N1_0.05=table(c(tolower(active_signatures$Cancer.Types[which(wgs_0.05[,'SBS_N1']==0 & colSums(humandata)>=200)]),tolower(activeWES$Type[which(wes_0.05[,'SBS_N1']==0 & colSums(humanWES)>=200)])))
+tum_N2_0.05=table(c(tolower(active_signatures$Cancer.Types[which(wgs_0.05[,'SBS_N2']==0 & colSums(humandata)>=200)]),tolower(activeWES$Type[which(wes_0.05[,'SBS_N2']==0 & colSums(humanWES)>=200)])))
+
+selwes=activeWES[which(colSums(humanWES)>=200),]
+selwgs=active_signatures[which(colSums(humandata)>=200),]
+totalnames=table(sort(c(tolower(selwgs$Cancer.Types),tolower(selwes$Type))))
+totalsamples=sum(totalnames)
+#8079 in total
+#I had to change the names of the samples manually,manually the number of tumours, for exmple cns-piloastro and cns-lgg were considered the same group
+
+#>0.05
+pt1=c()
+#19
+for (i in seq(1,length(tum_19_0.05))){
+test1=fisher.test(matrix(c(tum_19_0.05[names(tum_19_0.05)[i]],
+(sum(tum_19_0.05)-tum_19_0.05[names(tum_19_0.05)[i]]),
+(totalnames[names(tum_19_0.05)[i]]-tum_19_0.05[names(tum_19_0.05)[i]]),
+(totalsamples-sum(tum_19_0.05)-totalnames[names(tum_19_0.05)[i]]+tum_19_0.05[names(tum_19_0.05)[i]])),nrow=2,ncol=2),alternative='greater')
+pt1=c(pt1,test1$p.value)}
+#42
+for (i in seq(1,length(tum_42_0.05))){
+test1=fisher.test(matrix(c(tum_42_0.05[names(tum_42_0.05)[i]],
+(sum(tum_42_0.05)-tum_42_0.05[names(tum_42_0.05)[i]]),
+(totalnames[names(tum_42_0.05)[i]]-tum_42_0.05[names(tum_42_0.05)[i]]),
+(totalsamples-sum(tum_42_0.05)-totalnames[names(tum_42_0.05)[i]]+tum_42_0.05[names(tum_42_0.05)[i]])),nrow=2,ncol=2),alternative='greater')
+pt1=c(pt1,test1$p.value)}
+#N1
+for (i in seq(1,length(tum_N1_0.05))){
+test1=fisher.test(matrix(c(tum_N1_0.05[names(tum_N1_0.05)[i]],
+(sum(tum_N1_0.05)-tum_N1_0.05[names(tum_N1_0.05)[i]]),
+(totalnames[names(tum_N1_0.05)[i]]-tum_N1_0.05[names(tum_N1_0.05)[i]]),
+(totalsamples-sum(tum_N1_0.05)-totalnames[names(tum_N1_0.05)[i]]+tum_N1_0.05[names(tum_N1_0.05)[i]])),nrow=2,ncol=2),alternative='greater')
+pt1=c(pt1,test1$p.value)}
+#N2
+for (i in seq(1,length(tum_N2_0.05))){
+test1=fisher.test(matrix(c(tum_N2_0.05[names(tum_N2_0.05)[i]],
+(sum(tum_N2_0.05)-tum_N2_0.05[names(tum_N2_0.05)[i]]),
+(totalnames[names(tum_N2_0.05)[i]]-tum_N2_0.05[names(tum_N2_0.05)[i]]),
+(totalsamples-sum(tum_N2_0.05)-totalnames[names(tum_N2_0.05)[i]]+tum_N2_0.05[names(tum_N2_0.05)[i]])),nrow=2,ncol=2),alternative='greater')
+pt1=c(pt1,test1$p.value)}
+
+qt1=p.adjust(pt1,method='BH')
+names0.05=c(names(tum_19_0.05),names(tum_42_0.05),names(tum_N1_0.05),names(tum_N2_0.05))
+namesig=c(rep('SBS19',length(tum_19_0.05)),rep('SBS42',length(tum_42_0.05)),rep('SBS_N1',length(tum_N1_0.05)),rep('SBS_N2',length(tum_N2_0.05)))
+t1=data.frame(signature=namesig,cancertype=names0.05,nsample=c(tum_19_0.05,tum_42_0.05,tum_N1_0.05,tum_N2_0.05),ntumours=c(totalnames[names(tum_19_0.05)],totalnames[names(tum_42_0.05)],totalnames[names(tum_N1_0.05)],totalnames[names(tum_N2_0.05)]),pval=pt1,qval=qt1)
+
+write.table(t1,file='test_0.05_n.txt',quote=F,sep='\t',row.names=F,col.names=T)
+
+
+#write table spectra
+humandata[,tumwgs_N2_0.05]
+humanWES[,tumwes_N2_0.05]
+humandata[,tumwgs_N1_0.05]
+humandata[,tumwgs_19_0.05]
+humanWES[,tumwes_19_0.05]
+humandata[,tumwgs_42_0.05]
+humanWES[,tumwes_42_0.05]
+
+#write table activities
+active_signatures[tumwgs_N2_0.05,]
+activeWES[tumwes_N2_0.05,]
+active_signatures[tumwgs_N1_0.05,]
+active_signatures[tumwgs_19_0.05,]
+activeWES[tumwes_19_0.05,]
+active_signatures[tumwgs_42_0.05,]
+activeWES[tumwes_42_0.05,]
 
 
 
