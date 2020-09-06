@@ -22,21 +22,14 @@ samples<-c(samples1[1:36],samples1[42:83],samples1[37:41],samples1[84:181])
 ind_basechanges<-c(1:4,25:28,49:52,73:76)
 
 mut_mat_m<-sbss1[rownames(sbss1)[c(ind_basechanges,ind_basechanges+4,ind_basechanges+8,ind_basechanges+12,ind_basechanges+16,ind_basechanges+20)],samples]
-
-samples1<-c()
-for (i in 1:181) {samples1<-c(samples1,str_replace(samples[i],'_',' '))}
-samples2<-c()
-for (i in 1:181) {samples2<-c(samples2,str_replace(samples1[i],'_',' '))}
-samples3<-c()
-for (i in 1:181) {samples3<-c(samples3,str_replace(samples2[i],'_',' '))}
-samples<-samples3
+samples<-as.character(lapply(samples,function(x) str_replace_all(x,'_',' ')))
 
 ##===========================================================
 #figure 1A
 totalsnvs<-colSums(mut_mat_m)
 totalmut<-as.data.frame(totalsnvs)
 totalmut<-totalmut %>% mutate(sample=samples)
-colnames(totalmut)<-c('number_of_substitutions','sample')
+colnames(totalmut)<-c('number_of_SNVs','sample')
 
 namem_ord<-c("LUNG SPONTANEOUS",
 "LUNG ANTIMONY TRIOXIDE",          
@@ -67,23 +60,12 @@ namem_ord<-c("LUNG SPONTANEOUS",
 "STOMACH 1,2,3 TRICHLOROPROPANE", 
 "KIDNEY VINYLIDENE CHLORIDE")
 
-samples1<-c()
-for (i in seq(1,33)){
- 	indi<-str_which(samples,namem_ord[i])
- 	samples1[indi]<-namem_ord[i]}
- 	
-totalmut<-totalmut %>% mutate(category=samples1)
-
-samples1<-c()
-tissues<-c('LUNG','LIVER','KIDNEY','STOMACH')
-for (i in seq(1,4)){
- 	indi<-str_which(samples,tissues[i])
- 	samples1[indi]<-tissues[i]}
-totalmut<-totalmut %>% mutate(tissue=samples1)
+totalmut<-totalmut %>% mutate(category=as.character(lapply(samples,function(x) str_trim(str_sub(x, start = 1L, end =str_locate(x,"\\d$")[1]-2 )))))
+totalmut<-totalmut %>% mutate(tissue=as.character(lapply(samples,function(x) str_sub(x, start = 1L, end =str_locate(x,"\\s")[1] ))))
 
 #with all the points
-pdf("Figure1a.pdf",height=6,width=12)
-totalmut %>% mutate(name = fct_relevel(category, namem_ord)) %>% ggplot(aes(x=name, y=log10(number_of_substitutions),fill=tissue)) + geom_boxplot(outlier.shape = NA)+geom_jitter(color="black", size=0.5,alpha=0.95)+scale_fill_npg()+theme(axis.text.x=element_text(size = 9, angle = 45, hjust = 0))+theme(axis.text.y=element_text(size = 12))+scale_x_discrete(position = "top")+theme(text = element_text(size = 18))+xlab("tumour type")+
+pdf("Figure1a.pdf",height=5,width=11)
+totalmut %>% mutate(name = fct_relevel(category, namem_ord)) %>% ggplot(aes(x=name, y=log10(number_of_SNVs),fill=tissue)) + geom_boxplot(outlier.shape = NA)+geom_jitter(color="black", size=0.5,alpha=0.95)+scale_fill_npg()+theme(axis.text.x=element_text(size = 9, angle = 45, hjust = 0))+theme(axis.text.y=element_text(size = 12))+scale_x_discrete(position = "top")+theme(text = element_text(size = 18))+xlab("tumour type")+
   theme(panel.background = element_blank(),
         panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank(),
@@ -96,12 +78,12 @@ dev.off()
 nsnvs=colSums(mut_mat_m)
 
 #liver substitutions
-pp<-which((str_detect(names(nsnvs),'LIVER') & str_detect(names(nsnvs),'SPONTANEOUS'))==TRUE)
+spoliver<-which((str_detect(names(nsnvs),'LIVER') & str_detect(names(nsnvs),'SPONTANEOUS'))==TRUE)
 chem<-c("ANTHRAQUINONE","ANTIMONY_TRIOXIDE","BROMOCHLOROACETIC_ACID",   
 "COBALT", "CUMENE","DIETHANOLAMINE",            
 "FURAN","GINKGO_BILOBA_EXTRACT",      
 "INDIUM_PHOSPHIDE","ISOBUTYL_NITRITE","NICKEL_OXIDE",              
-"NICKEL_SULFATE",            
+"NICKEL_SULFATE_HEXAHYDRATE",            
 "NICKEL_SUBSULFIDE",        
 "OXAZEPAM",                               
 "DE-71",         
@@ -110,32 +92,36 @@ chem<-c("ANTHRAQUINONE","ANTIMONY_TRIOXIDE","BROMOCHLOROACETIC_ACID",
 "VANADIUM_PENTOXIDE",          
 "VINYLIDENE_CHLORIDE",           
 "1,2,3_TRICHLOROPROPANE")
-pval<-c()
+pval<-rep(0,length(chem))
 for (i in seq(1,length(chem))){
-pp1<-which((str_detect(names(nsnvs),'LIVER') & str_detect(names(nsnvs),chem[i]))==TRUE)
-pval<-c(pval,wilcox.test(nsnvs[pp1],nsnvs[pp],alternative='greater')$p.value)
+chemtestliver<-which((str_detect(names(nsnvs),'LIVER') & str_detect(names(nsnvs),chem[i]))==TRUE)
+pval[i]<-wilcox.test(nsnvs[chemtestliver],nsnvs[spoliver],alternative='greater')$p.value
 }
 qval<-p.adjust(pval,method='BH')
 #0.88461538 0.91499340 0.91499340 0.88461538 0.88461538 0.91499340 0.95768267 0.95768267 0.98201981 0.88461538 0.88461538 0.88461538 0.88461538 0.95768267 0.91499340 0.91499340 0.88461538 0.88461538 0.91499340 0.01465201 --> 1,2,3_TRICHLOROPROPANE
+qval_liver<-data.frame(chemical=chem,q.value=qval)
+write.table(qval_liver,file='liver_substitutions_qval.txt',quote=F,sep='\t',row.names=F)
 
 #lung substitutions
-pp<-which((str_detect(names(nsnvs),'LUNG') & str_detect(names(nsnvs),'SPONTANEOUS'))==TRUE)
+spolung<-which((str_detect(names(nsnvs),'LUNG') & str_detect(names(nsnvs),'SPONTANEOUS'))==TRUE)
 chem<-c("ANTIMONY_TRIOXIDE",          
 "COBALT",                           
 "ISOBUTYL_NITRITE",           
 "NICKEL_OXIDE",                
 "NICKEL_SUBSULFIDE",          
-"NICKEL_SULFATE",             
+"NICKEL_SULFATE_HEXAHYDRATE",             
 "SODIUM_TUNGSTATE_DIHYDRATE",  
 "VANADIUM_PENTOXIDE",         
 "VINYLIDENE_CHLORIDE")
-pval<-c()
+pval<-rep(0,length(chem))
 for (i in seq(1,length(chem))){
-pp1<-which((str_detect(names(nsnvs),'LUNG') & str_detect(names(nsnvs),chem[i]))==TRUE)
-pval<-c(pval,wilcox.test(nsnvs[pp1],nsnvs[pp],alternative='greater')$p.value)
+chemtestlung<-which((str_detect(names(nsnvs),'LUNG') & str_detect(names(nsnvs),chem[i]))==TRUE)
+pval[i]<-wilcox.test(nsnvs[chemtestlung],nsnvs[spolung],alternative='greater')$p.value
 }
 qval<-p.adjust(pval,method='BH')
 #0.9247468218 0.0004848093 0.9247468218 0.9247468218 0.7689560440 0.9247468218 0.9247468218 0.0197802198 0.6632191338 --> COBALT, VANADIUM_PENTOXIDE
+qval_lung<-data.frame(chemical=chem,q.value=qval)
+write.table(qval_lung,file='lung_substitutions_qval.txt',quote=F,sep='\t',row.names=F)
 
 #ndinuc liver and lung difference
 pp<-which((str_detect(names(nsnvs),'LUNG'))==TRUE)
@@ -215,35 +201,36 @@ mut_example_multi <- hdp_extract_components(mut_example_multi,min.sample=3)
 ##===========================================================
 #Figure 1B
 #compare mouse signatures to human signatures 
-#I normalize mouse signatures to human signatures
+#I normalize mouse signatures to compare them to the human signatures
 tricountHMnorm<-read.delim('../starting_data/mousetohuman_normalization.txt',sep='\t',header = F)
-nss<-t(mut_example_multi@comp_categ_distn$mean[1:11,])*tricountHMnorm$V2
-nhdp<-nss/t(matrix(rep(colSums(nss),96),nrow=11,ncol=96))
+msig<-t(mut_example_multi@comp_categ_distn$mean[1:11,])*tricountHMnorm$V2
+shdp_norm<-msig/t(matrix(rep(colSums(msig),96),nrow=11,ncol=96))
 namesig<-c("mSBS1","mSBS2","mSBS3" ,"mSBS4","mSBS5","mSBS6","mSBS7","mSBS8","mSBS9","mSBS10","mSBS11")
-colnames(nhdp)<-namesig
-csmap<-cos_sim_compare_multiplesignatures(cancer_signatures60,nhdp)
+colnames(shdp_norm)<-namesig
+csmap<-cos_sim_compare_multiplesignatures(cancer_signatures60,shdp_norm)
 i<-1;colnames(cancer_signatures60)[which(csmap[,i]==max(csmap[,i]))];print(round(max(csmap[,i]),digit=2))
-#write.table()
 
 #we realized that similarity of mSBS10 with SBS17 is lower than the threshold although visually they are very smilar.
 #This is mainly due to the fact that SBS17 has been divided in SBS17a and SBS17b but in our case they always appear together.
 #we decided to reconstruct the old signature 17 with SBS17a and SBS17b. We report this cosine similarity.  
 sp_url <- paste("https://cancer.sanger.ac.uk/cancergenome/assets/","signatures_probabilities.txt", sep = "")cancer_signatures <- read.table(sp_url, sep = "\t", header = TRUE)
 QP <- findSigExposures(as.numeric(cancer_signatures[,17]),cancer_signatures60[,c('SBS17a','SBS17b')])$exposures
-round(cos_sim(nhdp[,10],((0.41*cancer_signatures60[,'SBS17a'])+(0.59*cancer_signatures60[,'SBS17b']))),digit=2)
+round(cos_sim(shdp_norm[,10],((0.41*cancer_signatures60[,'SBS17a'])+(0.59*cancer_signatures60[,'SBS17b']))),digit=2)
+#write.table()
 
-#supplementary table, deconstruct mouse signature using the minimum number of human signatures, if more than 3 signatures are needed: it is a new siugnature
-min_best_cos_sim_signature(nhdp[,1],cancer_signatures60)
-min_best_cos_sim_signature(nhdp[,2],cancer_signatures60)
-min_best_cos_sim_signature(nhdp[,3],cancer_signatures60)
-min_best_cos_sim_signature(nhdp[,4],cancer_signatures60)
-min_best_cos_sim_signature(nhdp[,5],cancer_signatures60)
-min_best_cos_sim_signature(nhdp[,6],cancer_signatures60)
-min_best_cos_sim_signature(nhdp[,7],cancer_signatures60)
-min_best_cos_sim_signature(nhdp[,8],cancer_signatures60)
-min_best_cos_sim_signature(nhdp[,9],cancer_signatures60)
-min_best_cos_sim_signature(nhdp[,10],cancer_signatures60)
-min_best_cos_sim_signature(nhdp[,11],cancer_signatures60)
+#supplementary table, deconstruct mouse signature using the minimum number of human signatures, if more than 3 signatures are needed: it is a new signature
+min_best_cos_sim_signature(shdp_norm[,1],cancer_signatures60)
+min_best_cos_sim_signature(shdp_norm[,2],cancer_signatures60)
+min_best_cos_sim_signature(shdp_norm[,3],cancer_signatures60)
+min_best_cos_sim_signature(shdp_norm[,4],cancer_signatures60)
+min_best_cos_sim_signature(shdp_norm[,5],cancer_signatures60)
+min_best_cos_sim_signature(shdp_norm[,6],cancer_signatures60)
+min_best_cos_sim_signature(shdp_norm[,7],cancer_signatures60)
+min_best_cos_sim_signature(shdp_norm[,8],cancer_signatures60)
+min_best_cos_sim_signature(shdp_norm[,9],cancer_signatures60)
+min_best_cos_sim_signature(shdp_norm[,10],cancer_signatures60)
+min_best_cos_sim_signature(shdp_norm[,11],cancer_signatures60)
+#write.table()
 
 ##===========================================================
 #Figure 1 D
@@ -257,30 +244,8 @@ dev.off()
 
 ##===========================================================
 #now I study mutational exposures
-namem<-c("KIDNEY VINYLIDENE CHLORIDE", "LIVER 1,2,3 TRICHLOROPROPANE",
-"LIVER ANTHRAQUINONE","LIVER ANTIMONY TRIOXIDE","LIVER BROMOCHLOROACETIC ACID",   
-"LIVER COBALT METAL", "LIVER CUMENE","LIVER DIETHANOLAMINE",            
-"LIVER FURAN","LIVER GINKGO BILOBA EXTRACT",      
-"LIVER INDIUM PHOSPHIDE","LIVER ISOBUTYL NITRITE","LIVER NICKEL OXIDE",              
-"LIVER NICKEL SULFATE HEXAHYDRATE",            
-"LIVER NICKEL SUBSULFIDE",        
-"LIVER OXAZEPAM",                               
-"LIVER DE-71",         
-"LIVER PRIMACLONE",                
-"LIVER SODIUM TUNGSTATE DIHYDRATE",
-"LIVER SPONTANEOUS",                      
-"LIVER VANADIUM PENTOXIDE",          
-"LIVER VINYLIDENE CHLORIDE",        
-"LUNG ANTIMONY TRIOXIDE",          
-"LUNG COBALT METAL",                           
-"LUNG ISOBUTYL NITRITE",           
-"LUNG NICKEL OXIDE",                
-"LUNG NICKEL SUBSULFIDE",          
-"LUNG NICKEL SULFATE HEXAHYDRATE",             
-"LUNG SODIUM TUNGSTATE DIHYDRATE",  
-"LUNG SPONTANEOUS",                
-"LUNG VANADIUM PENTOXIDE",         
-"LUNG VINYLIDENE CHLORIDE","STOMACH 1,2,3 TRICHLOROPROPANE")
+namem<-sort(unique(as.character(lapply(samples,function(x) str_trim(str_sub(x, start = 1L, end =str_locate(x,"\\d$")[1]-2 ))))))
+namem<-c(namem[1:7],namem[9:17],namem[8],namem[18:33])
 
 #plot summary
 ss<-mut_example_multi@comp_dp_distn$mean[2:34,]
@@ -305,7 +270,6 @@ pp<-mut_example_multi@comp_dp_distn$mean[35:215,]
 colnames(pp)=namesig
 pp<-as.data.frame(pp)
 rownames(pp)<-samples
-#plot_contribution_heatmap(t(pp),method='ward.D')
 
 myColor <- colorRampPalette(c("white", "blue"))(60)
 myBreaks <- c(seq(0, 1, length.out=ceiling(60)))
