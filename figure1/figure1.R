@@ -10,28 +10,28 @@ source('../signature_decomposition/signature_decomposition.R')
 
 cancer_signatures60 <- read.table('../starting_data/PCAWG_signatures.txt', sep = "\t", header = TRUE)
 cancer_signatures60 <- as.matrix(cancer_signatures60[,2:66])
-nm<-colnames(cancer_signatures60)
+nm <- colnames(cancer_signatures60)
 
-sbss<-read.delim('../starting_data/SigProfilerMatrixGenerator_matrices/SBS96.all',header=T,sep='\t',check.names=F)
-sbss1<-sbss[,2:182]
+sbss <- read.delim('../starting_data/SigProfilerMatrixGenerator_matrices/SBS96.all',header=T,sep='\t',check.names=F)
+sbss1 <- sbss[,2:182]
 rownames(sbss1)<-sbss[,1]
 
-samples1<-sort(unique(colnames(sbss1)))
-samples<-c(samples1[1:36],samples1[42:83],samples1[37:41],samples1[84:181])
+samples1 <- sort(unique(colnames(sbss1)))
+samples <- c(samples1[1:36],samples1[42:83],samples1[37:41],samples1[84:181])
 
-ind_basechanges<-c(1:4,25:28,49:52,73:76)
+ind_basechanges <- c(1:4,25:28,49:52,73:76)
 
-mut_mat_m<-sbss1[rownames(sbss1)[c(ind_basechanges,ind_basechanges+4,ind_basechanges+8,ind_basechanges+12,ind_basechanges+16,ind_basechanges+20)],samples]
-samples<-as.character(lapply(samples,function(x) str_replace_all(x,'_',' ')))
+mut_mat_m <- sbss1[rownames(sbss1)[c(ind_basechanges,ind_basechanges+4,ind_basechanges+8,ind_basechanges+12,ind_basechanges+16,ind_basechanges+20)],samples]
+samples <- as.character(lapply(samples,function(x) str_replace_all(x,'_',' ')))
 
-##===========================================================
+############################################################################
 #figure 1A
-nsnvs<-colSums(mut_mat_m)
-totalmut<-as.data.frame(nsnvs)
-totalmut<-totalmut %>% mutate(sample=samples)
-colnames(totalmut)<-c('number_of_SNVs','sample')
+nsnvs <- colSums(mut_mat_m)
+totalmut <- as.data.frame(nsnvs)
+totalmut <- totalmut %>% mutate(sample=samples)
+colnames(totalmut) <- c('number_of_SNVs','sample')
 
-namem_ord<-c("LUNG SPONTANEOUS",
+namem_ord <- c("LUNG SPONTANEOUS",
 "LUNG ANTIMONY TRIOXIDE",          
 "LUNG COBALT METAL",                           
 "LUNG ISOBUTYL NITRITE",           
@@ -60,11 +60,11 @@ namem_ord<-c("LUNG SPONTANEOUS",
 "STOMACH 1,2,3 TRICHLOROPROPANE", 
 "KIDNEY VINYLIDENE CHLORIDE")
 
-totalmut<-totalmut %>% mutate(category=as.character(lapply(samples,function(x) str_trim(str_sub(x, start = 1L, end =str_locate(x,"\\d$")[1]-2 )))))
-totalmut<-totalmut %>% mutate(tissue=as.character(lapply(samples,function(x) str_sub(x, start = 1L, end =str_locate(x,"\\s")[1] ))))
+totalmut <- totalmut %>% mutate(category=as.character(lapply(samples,function(x) str_trim(str_sub(x, start = 1L, end =str_locate(x,"\\d$")[1]-2 )))))
+totalmut <- totalmut %>% mutate(tissue=as.character(lapply(samples,function(x) str_sub(x, start = 1L, end =str_locate(x,"\\s")[1] ))))
 
 #with all the points
-fig1a<-totalmut %>% mutate(name = fct_relevel(category, namem_ord)) %>% ggplot(aes(x=name, y=log10(number_of_SNVs),fill=tissue)) + geom_boxplot(outlier.shape = NA)+geom_jitter(color="black", size=0.5,alpha=0.95)+scale_fill_npg()+theme(axis.text.x=element_text(size = 9, angle = 45, hjust = 0))+theme(axis.text.y=element_text(size = 12))+scale_x_discrete(position = "top")+theme(text = element_text(size = 18))+xlab("tumour type")+
+fig1a <- totalmut %>% mutate(name = fct_relevel(category, namem_ord)) %>% ggplot(aes(x=name, y=log10(number_of_SNVs),fill=tissue)) + geom_boxplot(outlier.shape = NA)+geom_jitter(color="black", size=0.5,alpha=0.95)+scale_fill_npg()+theme(axis.text.x=element_text(size = 9, angle = 45, hjust = 0))+theme(axis.text.y=element_text(size = 12))+scale_x_discrete(position = "top")+theme(text = element_text(size = 18))+xlab("tumour type")+
   theme(panel.background = element_blank(),
         panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank(),
@@ -72,14 +72,13 @@ fig1a<-totalmut %>% mutate(name = fct_relevel(category, namem_ord)) %>% ggplot(a
         panel.border = element_rect(colour = "black", fill=NA, size=0.5))+theme(legend.key = element_rect(fill = "white", colour = "white"))
 ggsave(plot=fig1a, file='Fig-1a.pdf', device=cairo_pdf, width=12, height=4.5)
 
-
-##===========================================================
+############################################################################
 #test the difference in the number of snvs for lung and liver
-nsnvs=colSums(mut_mat_m)
+nsnvs <- colSums(mut_mat_m)
 
 #liver substitutions
-spoliver<-which((str_detect(names(nsnvs),'LIVER') & str_detect(names(nsnvs),'SPONTANEOUS'))==TRUE)
-chem<-c("ANTHRAQUINONE","ANTIMONY_TRIOXIDE","BROMOCHLOROACETIC_ACID",   
+spoliver <- which((str_detect(names(nsnvs),'LIVER') & str_detect(names(nsnvs),'SPONTANEOUS'))==TRUE)
+chem <- c("ANTHRAQUINONE","ANTIMONY_TRIOXIDE","BROMOCHLOROACETIC_ACID",   
 "COBALT", "CUMENE","DIETHANOLAMINE",            
 "FURAN","GINKGO_BILOBA_EXTRACT",      
 "INDIUM_PHOSPHIDE","ISOBUTYL_NITRITE","NICKEL_OXIDE",              
@@ -92,19 +91,19 @@ chem<-c("ANTHRAQUINONE","ANTIMONY_TRIOXIDE","BROMOCHLOROACETIC_ACID",
 "VANADIUM_PENTOXIDE",          
 "VINYLIDENE_CHLORIDE",           
 "1,2,3_TRICHLOROPROPANE")
-pval<-rep(0,length(chem))
+pval <- rep(0,length(chem))
 for (i in seq(1,length(chem))){
-chemtestliver<-which((str_detect(names(nsnvs),'LIVER') & str_detect(names(nsnvs),chem[i]))==TRUE)
-pval[i]<-wilcox.test(nsnvs[chemtestliver],nsnvs[spoliver],alternative='greater')$p.value
+chemtestliver <- which((str_detect(names(nsnvs),'LIVER') & str_detect(names(nsnvs),chem[i]))==TRUE)
+pval[i] <- wilcox.test(nsnvs[chemtestliver],nsnvs[spoliver],alternative='greater')$p.value
 }
-qval<-p.adjust(pval,method='BH')
+qval <- p.adjust(pval,method='BH')
 #0.88461538 0.91499340 0.91499340 0.88461538 0.88461538 0.91499340 0.95768267 0.95768267 0.98201981 0.88461538 0.88461538 0.88461538 0.88461538 0.95768267 0.91499340 0.91499340 0.88461538 0.88461538 0.91499340 0.01465201 --> 1,2,3_TRICHLOROPROPANE
-qval_liver<-data.frame(chemical=chem,q.value=qval)
+qval_liver <- data.frame(chemical=chem,q.value=qval)
 write.table(qval_liver,file='liver_substitutions_qval.txt',quote=F,sep='\t',row.names=F)
 
 #lung substitutions
-spolung<-which((str_detect(names(nsnvs),'LUNG') & str_detect(names(nsnvs),'SPONTANEOUS'))==TRUE)
-chem<-c("ANTIMONY_TRIOXIDE",          
+spolung <- which((str_detect(names(nsnvs),'LUNG') & str_detect(names(nsnvs),'SPONTANEOUS'))==TRUE)
+chem <- c("ANTIMONY_TRIOXIDE",          
 "COBALT",                           
 "ISOBUTYL_NITRITE",           
 "NICKEL_OXIDE",                
@@ -113,23 +112,23 @@ chem<-c("ANTIMONY_TRIOXIDE",
 "SODIUM_TUNGSTATE_DIHYDRATE",  
 "VANADIUM_PENTOXIDE",         
 "VINYLIDENE_CHLORIDE")
-pval<-rep(0,length(chem))
+pval <- rep(0,length(chem))
 for (i in seq(1,length(chem))){
-chemtestlung<-which((str_detect(names(nsnvs),'LUNG') & str_detect(names(nsnvs),chem[i]))==TRUE)
-pval[i]<-wilcox.test(nsnvs[chemtestlung],nsnvs[spolung],alternative='greater')$p.value
+chemtestlung <- which((str_detect(names(nsnvs),'LUNG') & str_detect(names(nsnvs),chem[i]))==TRUE)
+pval[i] <- wilcox.test(nsnvs[chemtestlung],nsnvs[spolung],alternative='greater')$p.value
 }
-qval<-p.adjust(pval,method='BH')
+qval <- p.adjust(pval,method='BH')
 #0.9247468218 0.0004848093 0.9247468218 0.9247468218 0.7689560440 0.9247468218 0.9247468218 0.0197802198 0.6632191338 --> COBALT, VANADIUM_PENTOXIDE
-qval_lung<-data.frame(chemical=chem,q.value=qval)
+qval_lung <- data.frame(chemical=chem,q.value=qval)
 write.table(qval_lung,file='lung_substitutions_qval.txt',quote=F,sep='\t',row.names=F)
 
 #ndinuc liver and lung difference
-pp<-which((str_detect(names(nsnvs),'LUNG'))==TRUE)
-pp1<-which((str_detect(names(nsnvs),'LIVER'))==TRUE)
-pval<-wilcox.test(nsnvs[pp1],nsnvs[pp])$p.value
+pp <- which((str_detect(names(nsnvs),'LUNG'))==TRUE)
+pp1 <- which((str_detect(names(nsnvs),'LIVER'))==TRUE)
+pval <- wilcox.test(nsnvs[pp1],nsnvs[pp])$p.value
 #0.0007545472 (1734,1354 median)
 
-##===========================================================
+############################################################################
 #signature extraction with HDP
 #since I am performing the novo analysis I do not normalize mouse data to human data, I will normalize later when I need to compare mouse signatures to human signatures
 hdp_mut <- hdp_init(ppindex = c(0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1), # index of parental node
@@ -141,7 +140,7 @@ hdp_mut <- hdp_addconparam(hdp_mut,
                             alphaa = rep(1,33), # shape hyperparams for 17 CPs
                             alphab = rep(1,33)) # rate hyperparams for 17 CPs
 
-pp<-c(rep(2,6),rep(3,4),rep(4,5),rep(5,6),rep(6,5), 
+pp <- c(rep(2,6),rep(3,4),rep(4,5),rep(5,6),rep(6,5), 
     rep(7,5),rep(8,5),rep(9,5),rep(10,5),rep(11,3),
     rep(12,5),rep(13,6),rep(14,4),rep(15,3),rep(16,6),
     rep(17,5),rep(18,5),rep(19,5),rep(20,6),rep(21,11), 
@@ -149,7 +148,7 @@ pp<-c(rep(2,6),rep(3,4),rep(4,5),rep(5,6),rep(6,5),
     rep(27,5),rep(28,4),rep(29,6),rep(30,6),rep(31,12),
     rep(32,3),rep(33,5),rep(34,5))
 
-cp<-pp+1                            
+cp <- pp+1                            
 
 hdp_mut <- hdp_adddp(hdp_mut,
                      numdp = 181, # add 177 nodes
@@ -163,7 +162,7 @@ hdp_mut <- hdp_setdata(hdp_mut,
 saveRDS(hdp_mut,file='hdp_sbss.rds')
 
 chlist <- vector("list", 8)
-##===========================================================
+############################################################################
 # This part is computationally intensive. 
 #for (i in 1:8){
 #activated <- dp_activate(hdp_mut,dpindex = 1:numdp(hdp_mut),initcc =20,seed = jobIndex*1000)
@@ -176,138 +175,138 @@ chlist <- vector("list", 8)
 
 # where the denovo_181.R is :
 #jobIndex <- as.numeric(Sys.getenv("LSB_JOBINDEX"))
-#hdp_mut=readRDS('hdp_sbss.rds')
+#hdp_mut <-readRDS('hdp_sbss.rds')
 #activated <- dp_activate(hdp_mut,dpindex = 1:numdp(induced),initcc =20,seed = jobIndex*1000)
 #chlist<- hdp_posterior(activated,burnin = 200000,n = 100,space = 1000,cpiter = 3,seed = 33333*(jobIndex+2)+ 1)
 #saveRDS(chlist,file=paste('hdp_mut_181_denovo.',jobIndex,'.rds',sep=''))
 
 #and the I uploaded the files that I have obtained
 #chlist <- vector("list", 8)
-##===========================================================
-chlist[[1]]<-readRDS('hdp_mut_181_denovo.1.rds')
-chlist[[2]]<-readRDS('hdp_mut_181_denovo.2.rds')
-chlist[[3]]<-readRDS('hdp_mut_181_denovo.3.rds')
-chlist[[4]]<-readRDS('hdp_mut_181_denovo.4.rds')
-chlist[[5]]<-readRDS('hdp_mut_181_denovo.5.rds')
-chlist[[6]]<-readRDS('hdp_mut_181_denovo.6.rds')
-chlist[[7]]<-readRDS('hdp_mut_181_denovo.7.rds')
-chlist[[8]]<-readRDS('hdp_mut_181_denovo.8.rds')
+############################################################################
+chlist[[1]] <- readRDS('hdp_mut_181_denovo.1.rds')
+chlist[[2]] <- readRDS('hdp_mut_181_denovo.2.rds')
+chlist[[3]] <- readRDS('hdp_mut_181_denovo.3.rds')
+chlist[[4]] <- readRDS('hdp_mut_181_denovo.4.rds')
+chlist[[5]] <- readRDS('hdp_mut_181_denovo.5.rds')
+chlist[[6]] <- readRDS('hdp_mut_181_denovo.6.rds')
+chlist[[7]] <- readRDS('hdp_mut_181_denovo.7.rds')
+chlist[[8]] <- readRDS('hdp_mut_181_denovo.8.rds')
 
 #combines all in one hdpMultiChain object, checks diagnostic plots, and then
 mut_example_multi <- hdp_multi_chain(chlist)
 #extract_components
 mut_example_multi <- hdp_extract_components(mut_example_multi,min.sample=3)
 
-##===========================================================
+############################################################################
 #Figure 1B
 #compare mouse signatures to human signatures 
 #I normalize mouse signatures to compare them to the human signatures
-tricountHMnorm<-read.delim('../starting_data/mousetohuman_normalization.txt',sep='\t',header = F)
-msig<-t(mut_example_multi@comp_categ_distn$mean[1:11,])*tricountHMnorm$V2
-shdp_norm<-msig/t(matrix(rep(colSums(msig),96),nrow=11,ncol=96))
-namesig<-c("mSBS1","mSBS2","mSBS3" ,"mSBS4","mSBS5","mSBS6","mSBS7","mSBS8","mSBS9","mSBS10","mSBS11")
-colnames(shdp_norm)<-namesig
-csmap<-cos_sim_compare_multiplesignatures(cancer_signatures60,shdp_norm)
-cossim=array(0,11)
-bestsig=matrix('',nrow=11,ncol=1)
+tricountHMnorm <- read.delim('../starting_data/mousetohuman_normalization.txt',sep='\t',header = F)
+msig <- t(mut_example_multi@comp_categ_distn$mean[1:11,])*tricountHMnorm$V2
+shdp_norm <- msig/t(matrix(rep(colSums(msig),96),nrow=11,ncol=96))
+namesig <- c("mSBS1","mSBS2","mSBS3" ,"mSBS4","mSBS5","mSBS6","mSBS7","mSBS8","mSBS9","mSBS10","mSBS11")
+colnames(shdp_norm) <- namesig
+csmap <-cos_sim_compare_multiplesignatures(cancer_signatures60,shdp_norm)
+cossim <- array(0,11)
+bestsig <- matrix('',nrow=11,ncol=1)
 for (i in seq(1,11)){
-bestsig[i]=colnames(cancer_signatures60)[which(csmap[,i]==max(csmap[,i]))];cossim[i]=round(max(csmap[,i]),digit=2)}
-d<-data.frame('signature'=namesig,'besthumansignature'=bestsig,'cosine_similarity'=cossim)
+bestsig[i] <- colnames(cancer_signatures60)[which(csmap[,i]==max(csmap[,i]))];cossim[i]=round(max(csmap[,i]),digit=2)}
+d <- data.frame('signature'=namesig,'besthumansignature'=bestsig,'cosine_similarity'=cossim)
 #we realized that similarity of mSBS10 with SBS17 is lower than the threshold although visually they are very smilar.
 #This is mainly due to the fact that SBS17 has been divided in SBS17a and SBS17b but in our case they always appear together.
 #we decided to reconstruct the old signature 17 with SBS17a and SBS17b. We report this cosine similarity.  
 sp_url <- paste("https://cancer.sanger.ac.uk/cancergenome/assets/","signatures_probabilities.txt", sep = "")cancer_signatures <- read.table(sp_url, sep = "\t", header = TRUE)
 QP <- findSigExposures(as.numeric(cancer_signatures[,17]),cancer_signatures60[,c('SBS17a','SBS17b')])$exposures
-d$cosine_similarity[10]=round(cos_sim(shdp_norm[,10],((0.41*cancer_signatures60[,'SBS17a'])+(0.59*cancer_signatures60[,'SBS17b']))),digit=2)
+d$cosine_similarity[10] <- round(cos_sim(shdp_norm[,10],((0.41*cancer_signatures60[,'SBS17a'])+(0.59*cancer_signatures60[,'SBS17b']))),digit=2)
 write.table(d,file='best_signature_cosime_similarity.txt',quote=F,sep='\t',row.names=F)
 
 #supplementary table, deconstruct mouse signature using the minimum number of human signatures, if more than 3 signatures are needed: it is a new signature
-weight=array(0,11)
-cossim=array(0,11)
-bestsig=matrix('',nrow=11,ncol=1)
+weight <- array(0,11)
+cossim <- array(0,11)
+bestsig <- matrix('',nrow=11,ncol=1)
 for (i in seq(1,11)){
-a=min_best_cos_sim_signature(shdp_norm[,i],cancer_signatures60)
+a <- min_best_cos_sim_signature(shdp_norm[,i],cancer_signatures60)
 if (!(is.na(a))){
-weight[i]=paste(as.character(a[[1]]),' ')
-bestsig[i]=as.character(tibble(rownames(as.matrix(a[[1]]))))
-cossim[i]=as.numeric(a[[2]])}
-else {bestsig[i]='NA'}}
+weight[i] <- paste(as.character(a[[1]]),' ')
+bestsig[i] <- as.character(tibble(rownames(as.matrix(a[[1]]))))
+cossim[i] <- as.numeric(a[[2]])}
+else {bestsig[i] <- 'NA'}}
 
-d<-data.frame('signature'=namesig,'besthumansignature'=bestsig,'weight'=weight,'cosine_similarity'=cossim)
+d <- data.frame('signature'=namesig,'besthumansignature'=bestsig,'weight'=weight,'cosine_similarity'=cossim)
 write.table(d,file='deconstruct_signature_cosime_similarity.txt',quote=F,sep='\t',row.names=F)
 
-##===========================================================
+############################################################################
 #Figure 1 D
 #plot signatures, I used Sigprofiler plot but I think it is easier here to just plot it in R
 #plot with correct names
-sign=t(mut_example_multi@comp_categ_distn$mean)
-colnames(sign)=c('mSBS5','mSBS40','mSBS19','mSBS_N1','mSBS42','mSBS12','mSBS_N2','mSBS18','mSBS1','mSBS17','mSBS_N3')
-fig1d<-plot_96_profile(sign,ymax=0.12)
+sign <- t(mut_example_multi@comp_categ_distn$mean)
+colnames(sign) <- c('mSBS5','mSBS40','mSBS19','mSBS_N1','mSBS42','mSBS12','mSBS_N2','mSBS18','mSBS1','mSBS17','mSBS_N3')
+fig1d <- plot_96_profile(sign,ymax=0.12)
 ggsave(plot=fig1d, file='Fig-1d.pdf', device=cairo_pdf, width=7, height=10)
 
-##===========================================================
+############################################################################
 #now I study mutational exposures
-namem<-sort(unique(as.character(lapply(samples,function(x) str_trim(str_sub(x, start = 1L, end =str_locate(x,"\\d$")[1]-2 ))))))
-namem<-c(namem[1:7],namem[9:17],namem[8],namem[18:33])
+namem <- sort(unique(as.character(lapply(samples,function(x) str_trim(str_sub(x, start = 1L, end =str_locate(x,"\\d$")[1]-2 ))))))
+namem <- c(namem[1:7],namem[9:17],namem[8],namem[18:33])
 
 #plot summary
-summary<-mut_example_multi@comp_dp_distn$mean[2:34,]
-rownames(summary)<-namem
-namesig<-c('mSBS5','mSBS40','mSBS19','mSBS_N1','mSBS42','mSBS12','mSBS_N2','mSBS18','mSBS1','mSBS17','mSBS_N3')
-colnames(summary)<-namesig
-exposure<-plot_contribution(t(summary), t(mut_example_multi@comp_categ_distn$mean),mode = "relative",coord_flip = TRUE,palette=c(RColorBrewer::brewer.pal(9, "Set1")[c(9)],RColorBrewer::brewer.pal(12, "Paired")))
+summary <- mut_example_multi@comp_dp_distn$mean[2:34,]
+rownames(summary) <- namem
+namesig <- c('mSBS5','mSBS40','mSBS19','mSBS_N1','mSBS42','mSBS12','mSBS_N2','mSBS18','mSBS1','mSBS17','mSBS_N3')
+colnames(summary) <- namesig
+exposure <- plot_contribution(t(summary), t(mut_example_multi@comp_categ_distn$mean),mode = "relative",coord_flip = TRUE,palette=c(RColorBrewer::brewer.pal(9, "Set1")[c(9)],RColorBrewer::brewer.pal(12, "Paired")))
 ggsave(plot=exposure, file='exposure.pdf', device=cairo_pdf, width=8, height=6)
 
 #plot summary statistical significant
-summarysi<-mut_example_multi@comp_dp_distn$mean;for (i in 2:dim(mut_example_multi@comp_dp_distn$mean)[1]) {summarysi[i,which(mut_example_multi@comp_dp_distn$cred.int[[i]][1,]==0)]=0}
-summarysi1<-summarysi[2:34,]
-colnames(summarysi1)<-namesig
-rownames(summarysi1)<-namem
-exposuresignificant<-plot_contribution(t(summarysi1), t(mut_example_multi@comp_categ_distn$mean),mode = "absolute",coord_flip = TRUE,palette=c(RColorBrewer::brewer.pal(9, "Set1")[c(9)],RColorBrewer::brewer.pal(12, "Paired")))
+summarysi <- mut_example_multi@comp_dp_distn$mean;for (i in 2:dim(mut_example_multi@comp_dp_distn$mean)[1]) {summarysi[i,which(mut_example_multi@comp_dp_distn$cred.int[[i]][1,]==0)]=0}
+summarysi1 <- summarysi[2:34,]
+colnames(summarysi1) <- namesig
+rownames(summarysi1) <- namem
+exposuresignificant <- plot_contribution(t(summarysi1), t(mut_example_multi@comp_categ_distn$mean),mode = "absolute",coord_flip = TRUE,palette=c(RColorBrewer::brewer.pal(9, "Set1")[c(9)],RColorBrewer::brewer.pal(12, "Paired")))
 ggsave(plot=exposuresignificant, file='exposuresignificant.pdf', device=cairo_pdf, width=8, height=6)
 
 #summplementary figure, clustering
-pp<-mut_example_multi@comp_dp_distn$mean[35:215,]
-colnames(pp)=namesig
-pp<-as.data.frame(pp)
-rownames(pp)<-samples
+pp <- mut_example_multi@comp_dp_distn$mean[35:215,]
+colnames(pp) <- namesig
+pp <- as.data.frame(pp)
+rownames(pp) <- samples
 
 myColor <- colorRampPalette(c("white", "blue"))(60)
 myBreaks <- c(seq(0, 1, length.out=ceiling(60)))
-oo=pheatmap(t(pp),clustering_distance_cols='correlation',cluster_rows=F,clustering_method='complete',fontsize_col=7,fontsize_row=12,breaks=myBreaks,col=myColor)
+oo <- pheatmap(t(pp),clustering_distance_cols='correlation',cluster_rows=F,clustering_method='complete',fontsize_col=7,fontsize_row=12,breaks=myBreaks,col=myColor)
 ggsave(plot=oo, file="exposureclustering.pdf", device=cairo_pdf, width=16, height=8)
 
-SupplementaryFigure<-plot_contribution(t(pp[oo$tree_col$order,]),coord_flip=FALSE,palette=c(RColorBrewer::brewer.pal(9, "Set1")[c(9)],RColorBrewer::brewer.pal(12, "Paired")))+
+SupplementaryFigure <- plot_contribution(t(pp[oo$tree_col$order,]),coord_flip=FALSE,palette=c(RColorBrewer::brewer.pal(9, "Set1")[c(9)],RColorBrewer::brewer.pal(12, "Paired")))+
     theme(axis.text.x= element_text(angle = 90, hjust = 1, vjust = 0.5,size=7))
 ggsave(plot=SupplementaryFigure, file="SupplementaryFigure.pdf", device=cairo_pdf, width=16, height=6)
 
-##===========================================================
+############################################################################
 #Figure 1 C
-pps<-pp*matrix(rep(nsnvs,11),nrow=181,ncol=11)
+pps <- pp*matrix(rep(nsnvs,11),nrow=181,ncol=11)
 
-rate<-matrix(0,nrow=11,ncol=33)
-mediana<-matrix(0,nrow=11,ncol=33)
+rate <- matrix(0,nrow=11,ncol=33)
+mediana <- matrix(0,nrow=11,ncol=33)
 
 for (i in seq(1,33)){
- 	indi=str_which(samples,namem[i])	
+ 	indi <- str_which(samples,namem[i])	
  	for (j in seq(1,11)){
- 	rate[j,i]<-length(which(pp[indi,j]>=0.1))/length(indi)	
+ 	rate[j,i] <- length(which(pp[indi,j]>=0.1))/length(indi)	
  	if (length(which(pp[indi,j]>=0.1))>0){
- 	mediana[j,i]<-mean(pp[indi[which(pp[indi,j]>=0.1)],j])}
+ 	mediana[j,i] <- mean(pp[indi[which(pp[indi,j]>=0.1)],j])}
  	}
  }
 
-rownames(rate)<-namesig
-colnames(rate)<-namem
-rownames(mediana)<-namesig
-colnames(mediana)<-namem
+rownames(rate) <- namesig
+colnames(rate) <- namem
+rownames(mediana) <- namesig
+colnames(mediana) <- namem
 
-ratesi<-data.frame(t(rate),stringsAsFactors=F,check.names=F)
-ratesi<-ratesi %>% mutate(tumour_type=rownames(ratesi))
+ratesi <- data.frame(t(rate),stringsAsFactors=F,check.names=F)
+ratesi <- ratesi %>% mutate(tumour_type=rownames(ratesi))
 ratesi.df <- gather(ratesi, namesig, key='signature',value='rate')
 
-medianasi<-data.frame(t(mediana),stringsAsFactors=F,check.names=F)
-medianasi<-medianasi %>% mutate(tumour_type=rownames(medianasi))
+medianasi <- data.frame(t(mediana),stringsAsFactors=F,check.names=F)
+medianasi <- medianasi %>% mutate(tumour_type=rownames(medianasi))
 medianasi.df <- gather(medianasi, namesig, key='signature',value='median_counts')
 
 ratesi.df <- ratesi.df %>% mutate(mecounts=medianasi.df$median_counts)
@@ -329,7 +328,7 @@ t14.rect1 <- data.frame (xmin=27.5, xmax=28.5, ymin=0.5, ymax=11.5)
 t15.rect1 <- data.frame (xmin=29.5, xmax=30.5, ymin=0.5, ymax=11.5)
 t16.rect1 <- data.frame (xmin=31.5, xmax=32.5, ymin=0.5, ymax=11.5)
 
-namesig1<-c('mSBS_N3','mSBS_N2','mSBS_N1','mSBS42','mSBS40','mSBS19','mSBS18','mSBS17','mSBS12','mSBS5','mSBS1')
+namesig1 <- c('mSBS_N3','mSBS_N2','mSBS_N1','mSBS42','mSBS40','mSBS19','mSBS18','mSBS17','mSBS12','mSBS5','mSBS1')
 
 spot.theme <- list(
     theme_classic(),
@@ -347,7 +346,7 @@ spot.theme <- list(
 
 p <- ratesi.df %>% mutate(name = fct_relevel(tumour_type, namem_ord)) %>% mutate(mSBS = fct_relevel(signature, namesig1)) %>% ggplot( aes(x=name, y=mSBS)) + geom_point(aes(colour = mecounts, size = rate))+xlab("tumour type")+ spot.theme
 
-p<- p +
+p <- p +
   geom_rect(data=t1.rect1, aes(xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax), fill='black', alpha=0.1, inherit.aes = FALSE) +
   geom_rect(data=t2.rect1, aes(xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax), fill='black', alpha=0.1, inherit.aes = FALSE) +
   geom_rect(data=t3.rect1, aes(xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax), fill='black', alpha=0.1, inherit.aes = FALSE) +
@@ -374,22 +373,21 @@ geom_vline(xintercept=1.5,color ="grey",size=1)+geom_vline(xintercept=11.5,color
 
 ggsave(plot=p, file='Fig-1c.pdf', device=cairo_pdf, width=16, height=7)
 
-##===========================================================
+############################################################################
 #Figure 1E TCP
 library(gridExtra)
 library(grid)
-ind<-which(str_detect(samples,'TRICHLOROPROPANE')=='TRUE')
-del<-pps[ind,]
-p1<-plot_contribution(t(del),t(mut_example_multi@comp_categ_distn$mean),mode = "relative",coord_flip=TRUE,palette=c(pal_npg("nrc",alpha=0.8)(10),'#FFFFFF'))+theme(axis.text.x= element_text(angle = 90, hjust = 1, vjust = 0.5,size=7))
-p2<-plot_contribution(t(del),t(mut_example_multi@comp_categ_distn$mean),mode = "absolute",coord_flip=TRUE,palette=c(pal_npg("nrc",alpha=0.8)(10),'#FFFFFF'))+theme(axis.text.x= element_text(angle = 90, hjust = 1, vjust = 0.5,size=7))
+ind <- which(str_detect(samples,'TRICHLOROPROPANE')=='TRUE')
+del <- pps[ind,]
+p1 <- plot_contribution(t(del),t(mut_example_multi@comp_categ_distn$mean),mode = "relative",coord_flip=TRUE,palette=c(pal_npg("nrc",alpha=0.8)(10),'#FFFFFF'))+theme(axis.text.x= element_text(angle = 90, hjust = 1, vjust = 0.5,size=7))
+p2 <- plot_contribution(t(del),t(mut_example_multi@comp_categ_distn$mean),mode = "absolute",coord_flip=TRUE,palette=c(pal_npg("nrc",alpha=0.8)(10),'#FFFFFF'))+theme(axis.text.x= element_text(angle = 90, hjust = 1, vjust = 0.5,size=7))
 ggsave(plot=grid.arrange(p1,p2,nrow=1), file='Fig-1e.pdf', device=cairo_pdf, width=12, height=6)
 
-
-##===========================================================
+############################################################################
 #Figure 1F VINYLIDENE CHLORIDE
-ind1<-which(str_detect(samples,'VINYLIDENE')=='TRUE')
-ind1<-c(1 ,2 ,3 ,4 , 5 ,  6 ,  114, 116, 112, 113, 115, 117, 118, 173, 176, 172,  174 ,175 )
-del<-pps[ind1,]
-p3<-plot_contribution(t(del),t(mut_example_multi@comp_categ_distn$mean),mode = "relative",coord_flip=TRUE,palette=c(pal_npg("nrc",alpha=0.8)(10),'#FFFFFF'))+theme(axis.text.x= element_text(angle = 90, hjust = 1, vjust = 0.5,size=7))
-p4<-plot_contribution(t(del),t(mut_example_multi@comp_categ_distn$mean),mode = "absolute",coord_flip=TRUE,palette=c(pal_npg("nrc",alpha=0.8)(10),'#FFFFFF'))+theme(axis.text.x= element_text(angle = 90, hjust = 1, vjust = 0.5,size=7))
+ind1 <- which(str_detect(samples,'VINYLIDENE')=='TRUE')
+ind1 <- c(1 ,2 ,3 ,4 , 5 ,  6 ,  114, 116, 112, 113, 115, 117, 118, 173, 176, 172,  174 ,175 )
+del <- pps[ind1,]
+p3 <- plot_contribution(t(del),t(mut_example_multi@comp_categ_distn$mean),mode = "relative",coord_flip=TRUE,palette=c(pal_npg("nrc",alpha=0.8)(10),'#FFFFFF'))+theme(axis.text.x= element_text(angle = 90, hjust = 1, vjust = 0.5,size=7))
+p4 <- plot_contribution(t(del),t(mut_example_multi@comp_categ_distn$mean),mode = "absolute",coord_flip=TRUE,palette=c(pal_npg("nrc",alpha=0.8)(10),'#FFFFFF'))+theme(axis.text.x= element_text(angle = 90,hjust = 1, vjust = 0.5,size=7))
 ggsave(plot=grid.arrange(p3,p4,nrow=1), file='Fig-1f.pdf', device=cairo_pdf, width=12, height=6)
