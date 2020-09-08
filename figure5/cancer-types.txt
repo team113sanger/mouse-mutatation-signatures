@@ -1,0 +1,22 @@
+id	tissue	type	label
+AML	Blood	AML	Acute myeloid leukaemia
+Biliary-AdenoCa	Bile duct	AC	Adenocarcinoma
+Bladder-TCC	Bladder	TCC	Transitional cell carcinoma
+Breast-cancer	Breast	NST	No special type
+CNS-GBM	CNS	GBM	Glioblastoma multiforme
+CNS-PiloAstro	CNS	PA	Pilocytic astrocytoma
+ColoRect-AdenoCa	Colorectal	AC	Adenocarcinoma
+Head-SCC	Head	SCC	Squamous cell carcinoma
+Kidney-RCC	Kidney	RCC	Renal cell carcinoma
+Liver-HCC	Liver	HCC	Hepatocellular carcinoma
+Lung-AdenoCa	Lung	AC	Adenocarcinoma
+Lung-SCC	Lung	SCC	Squamous cell carcinoma
+Lymph-CLL	Lymphatic	CLL	Chronic lymphocytic leukemia
+Panc-AdenoCa	Pancreas	AC	Adenocarcinoma
+Prost-AdenoCa	Prostate	AC	Adenocarcinoma
+Bone-Sarcoma	Bone	SA	Sarcoma
+Skin-Melanoma	Skin	MEL	Melanoma
+Skin-SCC	Skin	SCC	Squamous cell carcinoma
+Stomach-AdenoCa	Stomach	AC	Adenocarcinoma
+Thy-AdenoCa	Thyroid	AC	Adenocarcinoma
+Uterus-AdenoCa	Uterus	AC	Adenocarcinoma

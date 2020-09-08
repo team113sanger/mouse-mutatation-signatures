@@ -3,6 +3,13 @@
 library(tidyverse)
 library(ggsci)
 
+#identify mutational signatures in human cancers. Data are downloaded from 
+#Alexandrov et al., The repertoire of mutational signatures in human cancer, Nature 2020
+#accession code syn11801889, available at https://www.synapse.org/#!Synapse:syn11801889
+#In particular, I downloaded the following data (on September 13 2019):
+#Mutation Catalogs -- Spectra of Individual Tumours: WES_Other.96.csv, WES_TCGA.96.csv, WGS_Other.96.csv, WGS_PCAWG.96.csv 
+#SP_Signatures_in_Samples: nonPCAWG_WES_sigProfiler_SBS_signatures_in_samples_2018_04_13.csv, TCGA_WES_sigProfiler_SBS_signatures_in_samples.csv,
+#nonPCAWG_WGS_sigProfiler_SBS_signatures_in_samples_2018_04_13.csv, PCAWG_sigProfiler_SBS_signatures_in_samples.csv
 
 source('../signature_decomposition/signature_decomposition.R')
 cancer_signatures60 = read.table('../starting_data/PCAWG_signatures.txt', sep = "\t", header = TRUE)
@@ -24,11 +31,23 @@ names=c("A[C>A]A", "A[C>A]C",
 "A[T>G]G", "A[T>G]T", "C[T>G]A", "C[T>G]C", "C[T>G]G", "C[T>G]T", "G[T>G]A", "G[T>G]C",
 "G[T>G]G", "G[T>G]T", "T[T>G]A", "T[T>G]C", "T[T>G]G", "T[T>G]T")
 
+humanWGS1=read.csv('WGS_PCAWG.96.csv',check.names=FALSE)
+humanWGS2=read.csv('WGS_Other.96.csv',check.names=FALSE)
+humanWGS=cbind(humanWGS1[,3:2782],humanWGS2[,3:1867])
+rownames(humanWGS)=names
+#I upload this file because I used a specific order of the samples when I did the analysis 
+namessample=read.delim('nameorder.txt',header=F,check.names=FALSE)
+namessample=as.character(namessample$V1)
+humandata=humanWGS[,namessample]
 
-humandata1=read.csv('allWGS.96.csv',check.names=FALSE)
-humandata=humandata1[,3:4647]
-rownames(humandata)=names
-active_signatures=readRDS('active_signaturesall.rds')
+activeWGS1=read.csv('PCAWG_sigProfiler_SBS_signatures_in_samples.csv',check.names=FALSE)
+activeWGS2=read.csv('nonPCAWG_WGS_sigProfiler_SBS_signatures_in_samples_2018_04_13.csv',check.names=FALSE)
+activeWGS=rbind(activeWGS1,activeWGS2)
+colnames(activeWGS)=c('Cancer.Types','Sample.Names',colnames(activeWGS)[3:68])
+activeWGS=activeWGS %>% mutate(name=paste(Cancer.Types,Sample.Names,sep='::'))
+rownames(activeWGS)=activeWGS$name
+activeWGS=activeWGS[namessample,]
+active_signatures=activeWGS[,1:68]
 
 activeWES1=read.csv('nonPCAWG_WES_sigProfiler_SBS_signatures_in_samples_2018_04_13.csv',check.names=FALSE)
 activeWES2=read.csv('TCGA_WES_sigProfiler_SBS_signatures_in_samples.csv',check.names=FALSE)
@@ -41,12 +60,11 @@ namessample=sort(colnames(humanWES))
 humanWES=humanWES[,namessample]
 
 activeWES=rbind(activeWES1,activeWES2)
-colnames(activeWES)=c('Type','SampleName',colnames(activeWES)[3:68])
-activeWES=activeWES %>% mutate(name=paste(Type,SampleName,sep='::'))
+colnames(activeWES)=c('Cancer.Types','Sample.Names',colnames(activeWES)[3:68])
+activeWES=activeWES %>% mutate(name=paste(Cancer.Types,Sample.Names,sep='::'))
 rownames(activeWES)=activeWES$name
 activeWES=activeWES[namessample,]
-activenormwes=activeWES[,4:68]/rowSums(activeWES[,4:68])
-rownames(activenormwes)=colnames(humanWES)
+activeWES=activeWES[,1:68]
 
 sigtocons=c('SBS1','SBS2','SBS3','SBS4','SBS5','SBS6','SBS7a','SBS7b','SBS7c','SBS7d','SBS8','SBS9','SBS10a','SBS10b','SBS11','SBS12','SBS13','SBS14','SBS15','SBS16','SBS17a','SBS17b','SBS18','SBS19','SBS20','SBS21','SBS22','SBS23','SBS24','SBS25','SBS26','SBS28','SBS29','SBS30','SBS31','SBS32','SBS33','SBS34','SBS35','SBS36','SBS37','SBS38','SBS39','SBS40','SBS41','SBS42','SBS44')
 
@@ -117,7 +135,6 @@ nwgs=length(tumwgs_42_0.05)
 nwes=length(tumwes_42_0.05)
 pp=rbind(pp,cbind(wgs_0.05_42*sum(humandata[,tumwgs_42_0.05]),rep('WGS',nwgs),rep('SBS42',nwgs)),cbind(wes_0.05_42*colSums(humanWES[,tumwes_42_0.05]),rep('WES',nwes),rep('SBS42',nwes)))
 
-
 wgs_0.05_N1=matrix(1,nrow=length(tumwgs_N1_0.05),ncol=1)
 rownames(wgs_0.05_N1)=names(tumwgs_N1_0.05)
 for (i in seq(1,length(tumwgs_N1_0.05))){
@@ -147,6 +164,8 @@ d<-d %>%mutate(tumour=str_replace_all(d$tumour,'CA','Ca'))
 d<-d %>%mutate(tumour=str_replace_all(d$tumour,'Sarcoma-bone','Bone-Sarcoma'))
 d<-d %>%mutate(tumour=as.factor(tumour))
 
+############################################################################
+#Alastair Droop did this part of the code
 # This script plots the data for Figure 5A as a series of Pie Charts
 # Set the run parameters:
 params <- list(
@@ -203,56 +222,85 @@ g <- g + labs(y=expression(Mutations/Mb), x='')
 g <- g + theme(legend.position='right', legend.direction='vertical', legend.key=element_blank(), legend.key.size=unit(0.1, 'cm'), strip.background=element_blank())
 ggsave(plot=g, file='figure-5A.pdf', device=cairo_pdf, width=6, height=3)
 
+############################################################################
+#Supplementary Table 11a
+tablespectra=cbind(humandata[,tumwgs_19_0.05],humanWES[,tumwes_19_0.05],humandata[,tumwgs_42_0.05],humanWES[,tumwes_42_0.05],humandata[,tumwgs_N1_0.05],humandata[,tumwgs_N2_0.05],humanWES[,tumwes_N2_0.05])
+names=unique(colnames(tablespectra))
+tablespectra=tablespectra[,names]
+tablespectra=tablespectra %>%mutate(Mutation_Type=rownames(tablespectra))
+write.table(tablespectra,file='Supplementary_Table_11a.txt',quote=F,sep='\t',row.names=F,col.names=T)
 
+############################################################################
+#Supplementary Table 11b
+tableact=rbind(active_signatures[tumwgs_19_0.05,],
+activeWES[tumwes_19_0.05,],
+active_signatures[tumwgs_42_0.05,],
+activeWES[tumwes_42_0.05,],
+active_signatures[tumwgs_N1_0.05,],
+active_signatures[tumwgs_N2_0.05,],
+activeWES[tumwes_N2_0.05,])
 
-#write table pvalues
-#I had to correct this table manually because I realized that samples with different nams were part of the same tumour type
+signfound=c(rep('SBS19_wgs',dim(active_signatures[tumwgs_19_0.05,])[1]),
+rep('SBS19_wxs',dim(active_signatures[tumwes_19_0.05,])[1]),
+rep('SBS42_wgs',dim(active_signatures[tumwgs_42_0.05,])[1]),
+rep('SBS42_wxs',dim(active_signatures[tumwes_42_0.05,])[1]),
+rep('mSBS_N1_wgs',dim(active_signatures[tumwgs_N1_0.05,])[1]),
+rep('mSBS_N2_wgs',dim(active_signatures[tumwgs_N2_0.05,])[1]),
+rep('mSBS_N2_wxs',dim(active_signatures[tumwes_N2_0.05,])[1]))
+
+tableact=tableact%>%mutate(signatures=signfound)
+write.table(tableact,file='Supplementary_Table_11b.txt',quote=F,sep='\t',row.names=F,col.names=T)
+
+############################################################################
+#Supplementary Table 12
+#I had to change the names of the samples manually, because I realized that samples with different names were part of the same tumour type
+#for example cns-piloastro and cns-lgg were considered oif the same tumour type, but it was not clear from the starting data
+#I considered Classification_of_cancer_types_for_WES_data.xlsx file from 
+
 tumwgs_19_0.05=table(tolower(active_signatures$Cancer.Types[which(wgs_0.05[,'SBS19']==0 & colSums(humandata)>=200)]))
 tumwgs_42_0.05=table(tolower(active_signatures$Cancer.Types[which(wgs_0.05[,'SBS42']==0 & colSums(humandata)>=200)]))
 tumwgs_N1_0.05=table(tolower(active_signatures$Cancer.Types[which(wgs_0.05[,'SBS_N1']==0 & colSums(humandata)>=200)]))
 tumwgs_N2_0.05=table(tolower(active_signatures$Cancer.Types[which(wgs_0.05[,'SBS_N2']==0 & colSums(humandata)>=200)]))
 
-tumwes_19_0.05=table(tolower(activeWES$Type[which(wes_0.05[,'SBS19']==0 & colSums(humanWES)>=200)]))
-tumwes_42_0.05=table(tolower(activeWES$Type[which(wes_0.05[,'SBS42']==0 & colSums(humanWES)>=200)]))
-tumwes_N1_0.05=table(tolower(activeWES$Type[which(wes_0.05[,'SBS_N1']==0 & colSums(humanWES)>=200)]))
-tumwes_N2_0.05=table(tolower(activeWES$Type[which(wes_0.05[,'SBS_N2']==0 & colSums(humanWES)>=200)]))
+tumwes_19_0.05=table(tolower(activeWES$Cancer.Types[which(wes_0.05[,'SBS19']==0 & colSums(humanWES)>=200)]))
+tumwes_42_0.05=table(tolower(activeWES$Cancer.Types[which(wes_0.05[,'SBS42']==0 & colSums(humanWES)>=200)]))
+tumwes_N1_0.05=table(tolower(activeWES$Cancer.Types[which(wes_0.05[,'SBS_N1']==0 & colSums(humanWES)>=200)]))
+tumwes_N2_0.05=table(tolower(activeWES$Cancer.Types[which(wes_0.05[,'SBS_N2']==0 & colSums(humanWES)>=200)]))
 
-tum_19_0.05=table(c(tolower(active_signatures$Cancer.Types[which(wgs_0.05[,'SBS19']==0 & colSums(humandata)>=200)]),tolower(activeWES$Type[which(wes_0.05[,'SBS19']==0 & colSums(humanWES)>=200)])))
-tum_42_0.05=table(c(tolower(active_signatures$Cancer.Types[which(wgs_0.05[,'SBS42']==0 & colSums(humandata)>=200)]),tolower(activeWES$Type[which(wes_0.05[,'SBS42']==0 & colSums(humanWES)>=200)])))
-tum_N1_0.05=table(c(tolower(active_signatures$Cancer.Types[which(wgs_0.05[,'SBS_N1']==0 & colSums(humandata)>=200)]),tolower(activeWES$Type[which(wes_0.05[,'SBS_N1']==0 & colSums(humanWES)>=200)])))
-tum_N2_0.05=table(c(tolower(active_signatures$Cancer.Types[which(wgs_0.05[,'SBS_N2']==0 & colSums(humandata)>=200)]),tolower(activeWES$Type[which(wes_0.05[,'SBS_N2']==0 & colSums(humanWES)>=200)])))
+tum_19_0.05=table(c(tolower(active_signatures$Cancer.Types[which(wgs_0.05[,'SBS19']==0 & colSums(humandata)>=200)]),tolower(activeWES$Cancer.Types[which(wes_0.05[,'SBS19']==0 & colSums(humanWES)>=200)])))
+tum_42_0.05=table(c(tolower(active_signatures$Cancer.Types[which(wgs_0.05[,'SBS42']==0 & colSums(humandata)>=200)]),tolower(activeWES$Cancer.Types[which(wes_0.05[,'SBS42']==0 & colSums(humanWES)>=200)])))
+tum_N1_0.05=table(c(tolower(active_signatures$Cancer.Types[which(wgs_0.05[,'SBS_N1']==0 & colSums(humandata)>=200)]),tolower(activeWES$Cancer.Types[which(wes_0.05[,'SBS_N1']==0 & colSums(humanWES)>=200)])))
+tum_N2_0.05=table(c(tolower(active_signatures$Cancer.Types[which(wgs_0.05[,'SBS_N2']==0 & colSums(humandata)>=200)]),tolower(activeWES$Cancer.Types[which(wes_0.05[,'SBS_N2']==0 & colSums(humanWES)>=200)])))
 
 selwes=activeWES[which(colSums(humanWES)>=200),]
 selwgs=active_signatures[which(colSums(humandata)>=200),]
-totalnames=table(sort(c(tolower(selwgs$Cancer.Types),tolower(selwes$Type))))
+totalnames=table(sort(c(tolower(selwgs$Cancer.Types),tolower(selwes$Cancer.Types))))
 totalsamples=sum(totalnames)
 #8079 in total
-#I had to change the names of the samples manually,manually the number of tumours, for exmple cns-piloastro and cns-lgg were considered the same group
 
-#>0.05
 pt1=c()
-#19
+#SBS19
 for (i in seq(1,length(tum_19_0.05))){
 test1=fisher.test(matrix(c(tum_19_0.05[names(tum_19_0.05)[i]],
 (sum(tum_19_0.05)-tum_19_0.05[names(tum_19_0.05)[i]]),
 (totalnames[names(tum_19_0.05)[i]]-tum_19_0.05[names(tum_19_0.05)[i]]),
 (totalsamples-sum(tum_19_0.05)-totalnames[names(tum_19_0.05)[i]]+tum_19_0.05[names(tum_19_0.05)[i]])),nrow=2,ncol=2),alternative='greater')
 pt1=c(pt1,test1$p.value)}
-#42
+#SBS42
 for (i in seq(1,length(tum_42_0.05))){
 test1=fisher.test(matrix(c(tum_42_0.05[names(tum_42_0.05)[i]],
 (sum(tum_42_0.05)-tum_42_0.05[names(tum_42_0.05)[i]]),
 (totalnames[names(tum_42_0.05)[i]]-tum_42_0.05[names(tum_42_0.05)[i]]),
 (totalsamples-sum(tum_42_0.05)-totalnames[names(tum_42_0.05)[i]]+tum_42_0.05[names(tum_42_0.05)[i]])),nrow=2,ncol=2),alternative='greater')
 pt1=c(pt1,test1$p.value)}
-#N1
+#SBS_N1
 for (i in seq(1,length(tum_N1_0.05))){
 test1=fisher.test(matrix(c(tum_N1_0.05[names(tum_N1_0.05)[i]],
 (sum(tum_N1_0.05)-tum_N1_0.05[names(tum_N1_0.05)[i]]),
 (totalnames[names(tum_N1_0.05)[i]]-tum_N1_0.05[names(tum_N1_0.05)[i]]),
 (totalsamples-sum(tum_N1_0.05)-totalnames[names(tum_N1_0.05)[i]]+tum_N1_0.05[names(tum_N1_0.05)[i]])),nrow=2,ncol=2),alternative='greater')
 pt1=c(pt1,test1$p.value)}
-#N2
+#SBS_N2
 for (i in seq(1,length(tum_N2_0.05))){
 test1=fisher.test(matrix(c(tum_N2_0.05[names(tum_N2_0.05)[i]],
 (sum(tum_N2_0.05)-tum_N2_0.05[names(tum_N2_0.05)[i]]),
@@ -265,28 +313,7 @@ names0.05=c(names(tum_19_0.05),names(tum_42_0.05),names(tum_N1_0.05),names(tum_N
 namesig=c(rep('SBS19',length(tum_19_0.05)),rep('SBS42',length(tum_42_0.05)),rep('SBS_N1',length(tum_N1_0.05)),rep('SBS_N2',length(tum_N2_0.05)))
 t1=data.frame(signature=namesig,cancertype=names0.05,nsample=c(tum_19_0.05,tum_42_0.05,tum_N1_0.05,tum_N2_0.05),ntumours=c(totalnames[names(tum_19_0.05)],totalnames[names(tum_42_0.05)],totalnames[names(tum_N1_0.05)],totalnames[names(tum_N2_0.05)]),pval=pt1,qval=qt1)
 
-write.table(t1,file='test_0.05_n.txt',quote=F,sep='\t',row.names=F,col.names=T)
-
-
-#write table spectra
-humandata[,tumwgs_N2_0.05]
-humanWES[,tumwes_N2_0.05]
-humandata[,tumwgs_N1_0.05]
-humandata[,tumwgs_19_0.05]
-humanWES[,tumwes_19_0.05]
-humandata[,tumwgs_42_0.05]
-humanWES[,tumwes_42_0.05]
-
-#write table activities
-active_signatures[tumwgs_N2_0.05,]
-activeWES[tumwes_N2_0.05,]
-active_signatures[tumwgs_N1_0.05,]
-active_signatures[tumwgs_19_0.05,]
-activeWES[tumwes_19_0.05,]
-active_signatures[tumwgs_42_0.05,]
-activeWES[tumwes_42_0.05,]
-
-
+write.table(t1,file='Supplementary_Table_12.txt',quote=F,sep='\t',row.names=F,col.names=T)
 
 
 
