@@ -1,12 +1,8 @@
-#Laura Riva oct 2019
-
 library(MutationalPatterns)
 library(tidyverse)
-library(pheatmap)
 library(hdp)
 library(ggsci) 
 options(stringsAsFactors = F)
-
 source('../signature_decomposition/signature_decomposition.R')
 
 ############################################################################
@@ -19,7 +15,7 @@ samples1 <- sort(unique(colnames(dinuc1)))
 samples <- c(samples1[1:36],samples1[42:83],samples1[37:41],samples1[84:181])
 dinuc2 <- dinuc1[,samples]
 
-samples <- c(samples1[1:36],samples1[42:83],samples1[37:41],samples1[84:181])
+samples <- as.character(lapply(samples,function(x) str_replace_all(x,'_',' ')))
 
 ############################################################################
 #figure 3A
@@ -57,9 +53,8 @@ namem_ord <- c("LUNG SPONTANEOUS",
 "STOMACH 1,2,3 TRICHLOROPROPANE", 
 "KIDNEY VINYLIDENE CHLORIDE")
 
-totalmut <- totalmut %>% mutate(category=as.character(lapply(samples,function(x) str_trim(str_sub(x, start = 1L, end =str_locate(x,"\\d$")[1]-2 )))))
-#str_replace(x,"\\s\\d$",''))))
-totalmut <- totalmut %>% mutate(tissue=as.character(lapply(samples,function(x) str_sub(x, start = 1L, end =str_locate(x,"\\s")[1] ))))
+totaldinuc <- totaldinuc %>% mutate(category=as.character(lapply(samples,function(x) str_trim(str_sub(x, start = 1L, end =str_locate(x,"\\d$")[1]-2 )))))
+totaldinuc <- totaldinuc %>% mutate(tissue=as.character(lapply(samples,function(x) str_sub(x, start = 1L, end =str_locate(x,"\\s")[1] ))))
 
 fig3a <- totaldinuc %>% mutate(name = fct_relevel(category, namem_ord)) %>% ggplot(aes(x=name, y=number_of_dinucleotides,fill=tissue)) + geom_boxplot(outlier.shape = NA)+geom_jitter(color="black", size=0.5,alpha=0.95)+xlab("")+scale_fill_npg()+theme_light()+theme(axis.text.x=element_text(size = 9, angle = 45, hjust = 0))+theme(axis.text.y=element_text(size = 12))+scale_x_discrete(position = "top")+theme(text = element_text(size = 18))+xlab("tumour type")+ylab("number of dinucleotides")+theme(panel.background = element_blank(),
         panel.grid.major = element_blank(), 
@@ -274,48 +269,60 @@ chlist[[5]] <- readRDS('hdp_mut_dinuc_181_denovo.5.rds')
 chlist[[6]] <- readRDS('hdp_mut_dinuc_181_denovo.6.rds')
 chlist[[7]] <- readRDS('hdp_mut_dinuc_181_denovo.7.rds')
 chlist[[8]] <- readRDS('hdp_mut_dinuc_181_denovo.8.rds')
-mut_example_multi <- hdp_multi_chain(chlist)
-mut_example_multi <- hdp_extract_components(mut_example_multi,min.sample=3)
+mut_multi <- hdp_multi_chain(chlist)
+mut_multi <- hdp_extract_components(mut_multi,min.sample=3)
 
 ############################################################################
-#compare mouse indel signatures to human indel signatures...I do not do any normalization because we are working with indels
-sign <- mut_example_multi@comp_categ_distn$mean
+#compare mouse dinucleotide signatures to human dinucleotide signatures...I do not do any normalization because we are working with indels
+sign <- mut_multi@comp_categ_distn$mean
 #DBS signatures for mouse (normalized)
 dbs <- read.delim('../starting_data/DBS_signatures_genome_builds.txt')
 dbs1 <- dbs[1:78,2:12]
 rownames(dbs1) <- as.matrix(dbs[1:78,1])
-
 csmap <- cos_sim_compare_multiplesignatures(dbs1,t(sign))
-i <- 2;colnames(dbs1)[which(csmap[,i]==max(csmap[,i]))];print(round(max(csmap[,i]),digit=2))
-#"DBS2" 0.94
-i <- 3;colnames(dbs1)[which(csmap[,i]==max(csmap[,i]))];print(round(max(csmap[,i]),digit=2))
-#"DBS6" 0.68
-i <- 4;colnames(dbs1)[which(csmap[,i]==max(csmap[,i]))];print(round(max(csmap[,i]),digit=2))
-#"DBS4" 0.67
+cossim <- array(0,4)
+bestsig <- matrix('',nrow=4,ncol=1)
+namesig <- c('mDBS1','mDBS2','mDBS3','mDBS4')
+for (i in seq(1,4)){
+bestsig[i] <- colnames(dbs1)[which(csmap[,i]==max(csmap[,i]))];cossim[i]=round(max(csmap[,i]),digit=2)}
+d <- data.frame('signature'=namesig,'besthumansignature'=bestsig,'cosine_similarity'=cossim)
+write.table(d,file='compare_dinucleotides.txt',quote=F,sep='\t',row.names=F)
+#two signatures are new and we can identify mDBS2
 namesig <- c('0','mDBS2','mDBS_N1','mDBS_N2')
-#write.table
 
 ############################################################################
-#supplementary plots
-matt <- mut_example_multi@comp_dp_distn$mean
+#Supplementary_Figure_4b
+matt <- mut_multi@comp_dp_distn$mean
 matt <- matt[30:141,]
+#I used SigProfilerPlotting to plot Supplementary_Figure_4a, sigdinuc contains the dinucleotide signatures 
+sigdinuc <- t(mut_multi@comp_categ_distn$mean)
+
 rownames(matt) <- colnames(dinuchdp)
 colnames(matt) <- namesig
-dinucexposurerelative <- plot_contribution(t(matt), t(mut_example_multi@comp_categ_distn$mean),mode = "relative",coord_flip = F,palette=RColorBrewer::brewer.pal(12, "Paired"))+theme(axis.text.x= element_text(angle = 90, hjust = 1, vjust = 0.5,size=7))
-ggsave(plot=dinucexposurerelative, file='dinucexposurerelative.pdf', device=cairo_pdf, width=18, height=6)
+dinucexposureabsolute <- plot_contribution(t(matt*colSums(dinuchdp)), t(mut_multi@comp_categ_distn$mean),mode = "absolute",coord_flip = F,palette=RColorBrewer::brewer.pal(12, "Paired"))+theme(axis.text.x= element_text(angle = 90, hjust = 1, vjust = 0.5,size=7))
+ggsave(plot=dinucexposureabsolute, file='Supplementary_Figure_4b.pdf', device=cairo_pdf, width=18, height=6)
 
-dinucexposureabsolute <- plot_contribution(t(matt*colSums(dinuchdp)), t(mut_example_multi@comp_categ_distn$mean),mode = "absolute",coord_flip = F,palette=RColorBrewer::brewer.pal(12, "Paired"))+theme(axis.text.x= element_text(angle = 90, hjust = 1, vjust = 0.5,size=7))
-ggsave(plot=dinucexposurerelative, file='SupplementaryFigure_dinucexposureabsolute.pdf', device=cairo_pdf, width=18, height=6)
 
-#signature 3 is confidentially present only in cobalt, in all the cobalt samples 
+############################################################################
+#Supplementary_Figure_4c
+#mDBS_N2 is confidentially present only in cobalt, in all the cobalt samples 
 #the rest is mainly made up of DBS2
-matt1 <- mut_example_multi@comp_dp_distn$mean
-for (i in 2:141) {matt1[i,which(mut_example_multi@comp_dp_distn$cred.int[[i]][1,]==0)]=0}
+matt1 <- mut_multi@comp_dp_distn$mean
+for (i in 2:141) {matt1[i,which(mut_multi@comp_dp_distn$cred.int[[i]][1,]==0)]=0}
 matt1 <- matt1[30:141,]
 rownames(matt1) <- colnames(dinuchdp)
 colnames(matt1) <- namesig
 which(matt1[,4]>0)
 #LUNG_COBALT_METAL_1 LUNG_COBALT_METAL_2 LUNG_COBALT_METAL_3 LUNG_COBALT_METAL_4 LUNG_COBALT_METAL_5 LUNG_COBALT_METAL_6 
+
+#I used SigProfilerPlotting to plot Supplementary_Figure_4c, data in dinucm
+#I do not consider the samples without any dinucleotide mutations
+dinucn=t(t(dinuc2)/colSums(dinuc2))
+ind=which(str_detect(colnames(dinucn), 'LUNG_COBALT_METAL')==1)
+dinucm=rowMeans(dinucn[,ind])
+
+
+
 
 ############################################################################
 #Now I start analyzing indels
@@ -525,30 +532,28 @@ chlist[[5]] <- readRDS('hdp_ind_181_prior.5.rds')
 chlist[[6]] <- readRDS('hdp_ind_181_prior.6.rds')
 chlist[[7]] <- readRDS('hdp_ind_181_prior.7.rds')
 chlist[[8]] <- readRDS('hdp_ind_181_prior.8.rds')
-mut_example_multi <- hdp_multi_chain(chlist)
-mut_example_multi <- hdp_extract_components(mut_example_multi,min.sample=3)
+mut_multi <- hdp_multi_chain(chlist)
+mut_multi <- hdp_extract_components(mut_multi,min.sample=3)
 
 ############################################################################
-#compare mouse indel signatures to human indel signatures...I do not do any normalization because we are working with indels
-sign <- mut_example_multi@comp_categ_distn$mean
-colnames(sign) <- indel[,1]
-csmap <- cos_sim_compare_multiplesignatures(cancer_indel1,t(sign))
-i <-2 ;colnames(cancer_indel1)[which(csmap[,i]==max(csmap[,i]))];print(round(max(csmap[,i]),digit=2))
-#"ID1" 0.94
-i <-3 ;colnames(cancer_indel1)[which(csmap[,i]==max(csmap[,i]))];print(round(max(csmap[,i]),digit=2))
-#"ID2" 0.85
-i <-4 ;colnames(cancer_indel1)[which(csmap[,i]==max(csmap[,i]))];print(round(max(csmap[,i]),digit=2))
-#"ID9" 1
-i <-5 ;colnames(cancer_indel1)[which(csmap[,i]==max(csmap[,i]))];print(round(max(csmap[,i]),digit=2))
-#"ID3" 0.98
-i <-6 ;colnames(cancer_indel1)[which(csmap[,i]==max(csmap[,i]))];print(round(max(csmap[,i]),digit=2))
-#"ID8" 0.95
-
+#I used SigProfilerPlotting to plot Supplementary_Figure_5, sign contains the indel signatures 
+sign <- t(mut_multi@comp_categ_distn$mean)
+rownames(sign) <- indel[,1]
+csmap <- cos_sim_compare_multiplesignatures(cancer_indel1,sign)
+cossim <- array(0,6)
+bestsig <- matrix('',nrow=4,ncol=1)
+namesig<-c('mID1','mID2','mID3','mID4','mID5','mID6')
+for (i in seq(1,6)){
+bestsig[i] <- colnames(dbs1)[which(csmap[,i]==max(csmap[,i]))];cossim[i]=round(max(csmap[,i]),digit=2)}
+d <- data.frame('signature'=namesig,'besthumansignature'=bestsig,'cosine_similarity'=cossim)
+write.table(d,file='compare_indels.txt',quote=F,sep='\t',row.names=F)
+#considering a thereshold of 0.85, I can match them to human signatures
 namesig<-c('0','mID1','mID2','mID9','mID3','mID8')
+
 
 ############################################################################
 #Figure3D
-matt <- mut_example_multi@comp_dp_distn$mean
+matt <- mut_multi@comp_dp_distn$mean
 matt <- matt[20:52,]
 colnames(matt) <- namesig
 matt <- as.data.frame(matt)
