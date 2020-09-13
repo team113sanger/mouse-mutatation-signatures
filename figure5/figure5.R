@@ -1,5 +1,3 @@
-#Laura Riva April 2020
-
 library(tidyverse)
 library(ggsci)
 library(MutationalPatterns)
