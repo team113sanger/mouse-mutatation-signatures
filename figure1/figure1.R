@@ -1,5 +1,3 @@
-#Laura Riva Sept 2019
-
 library(MutationalPatterns)
 library(tidyverse)
 library(pheatmap)
@@ -193,16 +191,18 @@ chlist[[7]] <- readRDS('hdp_mut_181_denovo.7.rds')
 chlist[[8]] <- readRDS('hdp_mut_181_denovo.8.rds')
 
 #combines all in one hdpMultiChain object, checks diagnostic plots, and then
-mut_example_multi <- hdp_multi_chain(chlist)
+mut_multi <- hdp_multi_chain(chlist)
 #extract_components
-mut_example_multi <- hdp_extract_components(mut_example_multi,min.sample=3)
+mut_multi <- hdp_extract_components(mut_multi,min.sample=3)
+
 
 ############################################################################
 #Figure 1B
 #compare mouse signatures to human signatures 
 #I normalize mouse signatures to compare them to the human signatures
 tricountHMnorm <- read.delim('../starting_data/mousetohuman_normalization.txt',sep='\t',header = F)
-msig <- t(mut_example_multi@comp_categ_distn$mean[1:11,])*tricountHMnorm$V2
+mSBSs <- t(mut_multi@comp_categ_distn$mean[1:11,])
+msig <- mSBSs*tricountHMnorm$V2
 shdp_norm <- msig/t(matrix(rep(colSums(msig),96),nrow=11,ncol=96))
 namesig <- c("mSBS1","mSBS2","mSBS3" ,"mSBS4","mSBS5","mSBS6","mSBS7","mSBS8","mSBS9","mSBS10","mSBS11")
 colnames(shdp_norm) <- namesig
@@ -218,81 +218,77 @@ d <- data.frame('signature'=namesig,'besthumansignature'=bestsig,'cosine_similar
 sp_url <- paste("https://cancer.sanger.ac.uk/cancergenome/assets/","signatures_probabilities.txt", sep = "")cancer_signatures <- read.table(sp_url, sep = "\t", header = TRUE)
 QP <- findSigExposures(as.numeric(cancer_signatures[,17]),cancer_signatures60[,c('SBS17a','SBS17b')])$exposures
 d$cosine_similarity[10] <- round(cos_sim(shdp_norm[,10],((0.41*cancer_signatures60[,'SBS17a'])+(0.59*cancer_signatures60[,'SBS17b']))),digit=2)
-write.table(d,file='best_signature_cosime_similarity.txt',quote=F,sep='\t',row.names=F)
+write.table(d,file='Fig-2b_table.txt',quote=F,sep='\t',row.names=F)
+namesig <- c('mSBS5','mSBS40','mSBS19','mSBS_N1','mSBS42','mSBS12','mSBS_N2','mSBS18','mSBS1','mSBS17','mSBS_N3')
 
-#supplementary table, deconstruct mouse signature using the minimum number of human signatures, if more than 3 signatures are needed: it is a new signature
+#supplementary table 4, deconstruct mouse signature using the minimum number of human signatures, if more than 3 signatures are needed: it is a new signature
 weight <- array(0,11)
 cossim <- array(0,11)
 bestsig <- matrix('',nrow=11,ncol=1)
 for (i in seq(1,11)){
-a <- min_best_cos_sim_signature(shdp_norm[,i],cancer_signatures60)
-if (!(is.na(a))){
-weight[i] <- paste(as.character(a[[1]]),' ')
-bestsig[i] <- as.character(tibble(rownames(as.matrix(a[[1]]))))
-cossim[i] <- as.numeric(a[[2]])}
-else {bestsig[i] <- 'NA'}}
-
+	a <- min_best_cos_sim_signature(shdp_norm[,i],cancer_signatures60)
+	if (!(is.na(a[1]))){
+		weight[i] <- paste(as.character(a[[1]]),' ')
+		bestsig[i] <- as.character(tibble(rownames(as.matrix(a[[1]]))))
+		cossim[i] <- as.numeric(a[[2]])
+	}
+	else {bestsig[i] <- 'NA'
+	}
+}
 d <- data.frame('signature'=namesig,'besthumansignature'=bestsig,'weight'=weight,'cosine_similarity'=cossim)
-write.table(d,file='deconstruct_signature_cosime_similarity.txt',quote=F,sep='\t',row.names=F)
+write.table(d,file='Supplementary_table_4.txt',quote=F,sep='\t',row.names=F)
+
+############################################################################
+#save some of the data to use
+mSBSs <- t(mut_multi@comp_categ_distn$mean[1:11,])
+colnames(mSBSs) <- namesig
+
+mexposure <- mut_multi@comp_dp_distn$mean[35:215,]
+mexposure <- as.data.frame(mexposure)
+rownames(mexposure) <- samples
+colnames(mexposure) <- namesig
+
+mexposuresig <- mut_multi@comp_dp_distn$mean;for (i in 2:dim(mut_multi@comp_dp_distn$mean)[1]) {mexposuresig[i,which(mut_multi@comp_dp_distn$cred.int[[i]][1,]==0)]=0}
+mexposuresig <- mexposuresig[35:215,]
+mexposuresig <- as.data.frame(mexposuresig)
+rownames(mexposuresig) <- samples
+colnames(mexposuresig) <- namesig
+
+saveRDS(mSBSs,file='mSBSs.rds')
+saveRDS(mexposure,file='mexposure.rds')
+saveRDS(mexposuresig,file='mexposuresig.rds')
+
 
 ############################################################################
 #Figure 1 D
 #plot signatures, I used Sigprofiler plot but I think it is easier here to just plot it in R
 #plot with correct names
-sign <- t(mut_example_multi@comp_categ_distn$mean)
-colnames(sign) <- c('mSBS5','mSBS40','mSBS19','mSBS_N1','mSBS42','mSBS12','mSBS_N2','mSBS18','mSBS1','mSBS17','mSBS_N3')
-fig1d <- plot_96_profile(sign,ymax=0.12)
+fig1d <- plot_96_profile(mSBSs,ymax=0.12)
 ggsave(plot=fig1d, file='Fig-1d.pdf', device=cairo_pdf, width=7, height=10)
 
 ############################################################################
-#now I study mutational exposures
-namem <- sort(unique(as.character(lapply(samples,function(x) str_trim(str_sub(x, start = 1L, end =str_locate(x,"\\d$")[1]-2 ))))))
-namem <- c(namem[1:7],namem[9:17],namem[8],namem[18:33])
-
-#plot summary
-summary <- mut_example_multi@comp_dp_distn$mean[2:34,]
-rownames(summary) <- namem
-namesig <- c('mSBS5','mSBS40','mSBS19','mSBS_N1','mSBS42','mSBS12','mSBS_N2','mSBS18','mSBS1','mSBS17','mSBS_N3')
-colnames(summary) <- namesig
-exposure <- plot_contribution(t(summary), t(mut_example_multi@comp_categ_distn$mean),mode = "relative",coord_flip = TRUE,palette=c(RColorBrewer::brewer.pal(9, "Set1")[c(9)],RColorBrewer::brewer.pal(12, "Paired")))
-ggsave(plot=exposure, file='exposure.pdf', device=cairo_pdf, width=8, height=6)
-
-#plot summary statistical significant
-summarysi <- mut_example_multi@comp_dp_distn$mean;for (i in 2:dim(mut_example_multi@comp_dp_distn$mean)[1]) {summarysi[i,which(mut_example_multi@comp_dp_distn$cred.int[[i]][1,]==0)]=0}
-summarysi1 <- summarysi[2:34,]
-colnames(summarysi1) <- namesig
-rownames(summarysi1) <- namem
-exposuresignificant <- plot_contribution(t(summarysi1), t(mut_example_multi@comp_categ_distn$mean),mode = "absolute",coord_flip = TRUE,palette=c(RColorBrewer::brewer.pal(9, "Set1")[c(9)],RColorBrewer::brewer.pal(12, "Paired")))
-ggsave(plot=exposuresignificant, file='exposuresignificant.pdf', device=cairo_pdf, width=8, height=6)
-
 #summplementary figure, clustering
-pp <- mut_example_multi@comp_dp_distn$mean[35:215,]
-colnames(pp) <- namesig
-pp <- as.data.frame(pp)
-rownames(pp) <- samples
-
 myColor <- colorRampPalette(c("white", "blue"))(60)
 myBreaks <- c(seq(0, 1, length.out=ceiling(60)))
-oo <- pheatmap(t(pp),clustering_distance_cols='correlation',cluster_rows=F,clustering_method='complete',fontsize_col=7,fontsize_row=12,breaks=myBreaks,col=myColor)
-ggsave(plot=oo, file="exposureclustering.pdf", device=cairo_pdf, width=16, height=8)
-
-SupplementaryFigure <- plot_contribution(t(pp[oo$tree_col$order,]),coord_flip=FALSE,palette=c(RColorBrewer::brewer.pal(9, "Set1")[c(9)],RColorBrewer::brewer.pal(12, "Paired")))+
+oo <- pheatmap(t(mexposure),clustering_distance_cols='correlation',cluster_rows=F,clustering_method='complete',fontsize_col=7,fontsize_row=12,breaks=myBreaks,col=myColor)
+SupplementaryFigure <- plot_contribution(t(mexposure[oo$tree_col$order,]),coord_flip=FALSE,palette=c(RColorBrewer::brewer.pal(9, "Set1")[c(9)],RColorBrewer::brewer.pal(12, "Paired")))+
     theme(axis.text.x= element_text(angle = 90, hjust = 1, vjust = 0.5,size=7))
-ggsave(plot=SupplementaryFigure, file="SupplementaryFigure.pdf", device=cairo_pdf, width=16, height=6)
+ggsave(plot=SupplementaryFigure, file="Supplementary_Figure_3.pdf", device=cairo_pdf, width=16, height=6)
 
 ############################################################################
 #Figure 1 C
-pps <- pp*matrix(rep(nsnvs,11),nrow=181,ncol=11)
-
+namem <- sort(unique(as.character(lapply(samples,function(x) str_trim(str_sub(x, start = 1L, end =str_locate(x,"\\d$")[1]-2 ))))))
+namem <- c(namem[1:7],namem[9:17],namem[8],namem[18:33])
+mexposuretotal <- mexposure*matrix(rep(nsnvs,11),nrow=181,ncol=11)
 rate <- matrix(0,nrow=11,ncol=33)
 mediana <- matrix(0,nrow=11,ncol=33)
 
 for (i in seq(1,33)){
  	indi <- str_which(samples,namem[i])	
  	for (j in seq(1,11)){
- 	rate[j,i] <- length(which(pp[indi,j]>=0.1))/length(indi)	
- 	if (length(which(pp[indi,j]>=0.1))>0){
- 	mediana[j,i] <- mean(pp[indi[which(pp[indi,j]>=0.1)],j])}
+ 	rate[j,i] <- length(which(mexposure[indi,j]>=0.1))/length(indi)	
+ 	if (length(which(mexposure[indi,j]>=0.1))>0){
+ 	mediana[j,i] <- mean(mexposure[indi[which(mexposure[indi,j]>=0.1)],j])}
  	}
  }
 
@@ -378,16 +374,16 @@ ggsave(plot=p, file='Fig-1c.pdf', device=cairo_pdf, width=16, height=7)
 library(gridExtra)
 library(grid)
 ind <- which(str_detect(samples,'TRICHLOROPROPANE')=='TRUE')
-del <- pps[ind,]
-p1 <- plot_contribution(t(del),t(mut_example_multi@comp_categ_distn$mean),mode = "relative",coord_flip=TRUE,palette=c(pal_npg("nrc",alpha=0.8)(10),'#FFFFFF'))+theme(axis.text.x= element_text(angle = 90, hjust = 1, vjust = 0.5,size=7))
-p2 <- plot_contribution(t(del),t(mut_example_multi@comp_categ_distn$mean),mode = "absolute",coord_flip=TRUE,palette=c(pal_npg("nrc",alpha=0.8)(10),'#FFFFFF'))+theme(axis.text.x= element_text(angle = 90, hjust = 1, vjust = 0.5,size=7))
+del <- mexposuretotal[ind,]
+p1 <- plot_contribution(t(del),mSBSs,mode = "relative",coord_flip=TRUE,palette=c(pal_npg("nrc",alpha=0.8)(10),'#FFFFFF'))+theme(axis.text.x= element_text(angle = 90, hjust = 1, vjust = 0.5,size=7))
+p2 <- plot_contribution(t(del),mSBSs,mode = "absolute",coord_flip=TRUE,palette=c(pal_npg("nrc",alpha=0.8)(10),'#FFFFFF'))+theme(axis.text.x= element_text(angle = 90, hjust = 1, vjust = 0.5,size=7))
 ggsave(plot=grid.arrange(p1,p2,nrow=1), file='Fig-1e.pdf', device=cairo_pdf, width=12, height=6)
 
 ############################################################################
 #Figure 1F VINYLIDENE CHLORIDE
 ind1 <- which(str_detect(samples,'VINYLIDENE')=='TRUE')
 ind1 <- c(1 ,2 ,3 ,4 , 5 ,  6 ,  114, 116, 112, 113, 115, 117, 118, 173, 176, 172,  174 ,175 )
-del <- pps[ind1,]
-p3 <- plot_contribution(t(del),t(mut_example_multi@comp_categ_distn$mean),mode = "relative",coord_flip=TRUE,palette=c(pal_npg("nrc",alpha=0.8)(10),'#FFFFFF'))+theme(axis.text.x= element_text(angle = 90, hjust = 1, vjust = 0.5,size=7))
-p4 <- plot_contribution(t(del),t(mut_example_multi@comp_categ_distn$mean),mode = "absolute",coord_flip=TRUE,palette=c(pal_npg("nrc",alpha=0.8)(10),'#FFFFFF'))+theme(axis.text.x= element_text(angle = 90,hjust = 1, vjust = 0.5,size=7))
+del <- mexposuretotal[ind1,]
+p3 <- plot_contribution(t(del),mSBSs,mode = "relative",coord_flip=TRUE,palette=c(pal_npg("nrc",alpha=0.8)(10),'#FFFFFF'))+theme(axis.text.x= element_text(angle = 90, hjust = 1, vjust = 0.5,size=7))
+p4 <- plot_contribution(t(del),mSBSs,mode = "absolute",coord_flip=TRUE,palette=c(pal_npg("nrc",alpha=0.8)(10),'#FFFFFF'))+theme(axis.text.x= element_text(angle = 90,hjust = 1, vjust = 0.5,size=7))
 ggsave(plot=grid.arrange(p3,p4,nrow=1), file='Fig-1f.pdf', device=cairo_pdf, width=12, height=6)
