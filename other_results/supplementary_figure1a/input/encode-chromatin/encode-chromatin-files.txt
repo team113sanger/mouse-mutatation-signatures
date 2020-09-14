@@ -1,0 +1,5 @@
+# This file documents the ENCODE broadPeak hotspot data to download via AWS S3
+# organ	target	S3_URI
+lung_r1	DNase	s3://encode-public/2018/07/25/6c726abc-5a15-40b5-8989-c39aabbeb1d2/ENCFF769WJE.bed.gz
+lung_r2	DNase	s3://encode-public/2018/07/25/b0217ab5-1d16-4e95-84c7-96ce98c2a966/ENCFF036UVG.bed.gz
+lung_r3	DNase	s3://encode-public/2018/07/25/98a47fdb-e05d-42a8-baf8-3469c91237d9/ENCFF749VUS.bed.gz

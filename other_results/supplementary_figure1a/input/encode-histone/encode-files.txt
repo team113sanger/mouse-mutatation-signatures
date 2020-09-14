@@ -1,0 +1,9 @@
+# This file documents the ENCODE narrowPeak data to download via AWS S3
+# organ	target	S3_URI
+liver	H3K27ac	s3://encode-public/2016/05/03/7b6b3773-64be-41df-963b-ff9d6c165a41/ENCFF545NYE.bed.gz
+liver	H3K27me3	s3://encode-public/2016/11/15/2ca228ed-600b-4b40-bddd-9b0ee7f24176/ENCFF506DLC.bed.gz
+liver	H3K36me3	s3://encode-public/2016/11/15/0aae6c4b-656f-459d-97eb-3efc83895dbb/ENCFF718JST.bed.gz
+liver	H3K79me2	s3://encode-public/2016/11/15/33ca85ae-cd83-403f-a129-458563431186/ENCFF306QLL.bed.gz
+liver	H3K9ac	s3://encode-public/2016/11/15/f401d83a-14c1-487a-a704-49cebc3a056b/ENCFF787EAZ.bed.gz
+lung	H3K4me3	s3://encode-public/2016/05/03/bbb83850-f8f8-4dd8-a16a-00cf08444398/ENCFF508WEP.bed.gz
+lung	H3K4me1	s3://encode-public/2016/11/15/5dee72be-740b-4a98-8877-3efbfbfcc6f9/ENCFF865RFC.bed.gz
