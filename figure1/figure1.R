@@ -59,7 +59,7 @@ namem_ord <- c("LUNG SPONTANEOUS",
 "KIDNEY VINYLIDENE CHLORIDE")
 
 totalmut <- totalmut %>% mutate(category=as.character(lapply(samples,function(x) str_trim(str_sub(x, start = 1L, end =str_locate(x,"\\d$")[1]-2 )))))
-totalmut <- totalmut %>% mutate(tissue=as.character(lapply(samples,function(x) str_sub(x, start = 1L, end =str_locate(x,"\\s")[1] ))))
+totalmut <- totalmut %>% mutate(tissue=as.character(lapply(samples,function(x) str_sub(x, start = 1L, end =str_locate(x,"\\s")[1]-1 ))))
 
 #with all the points
 fig1a <- totalmut %>% mutate(name = fct_relevel(category, namem_ord)) %>% ggplot(aes(x=name, y=log10(number_of_SNVs),fill=tissue)) + geom_boxplot(outlier.shape = NA)+geom_jitter(color="black", size=0.5,alpha=0.95)+scale_fill_npg()+theme(axis.text.x=element_text(size = 9, angle = 45, hjust = 0))+theme(axis.text.y=element_text(size = 12))+scale_x_discrete(position = "top")+theme(text = element_text(size = 18))+xlab("tumour type")+
@@ -215,7 +215,10 @@ d <- data.frame('signature'=namesig,'besthumansignature'=bestsig,'cosine_similar
 #we realized that similarity of mSBS10 with SBS17 is lower than the threshold although visually they are very smilar.
 #This is mainly due to the fact that SBS17 has been divided in SBS17a and SBS17b but in our case they always appear together.
 #we decided to reconstruct the old signature 17 with SBS17a and SBS17b. We report this cosine similarity.  
-sp_url <- paste("https://cancer.sanger.ac.uk/cancergenome/assets/","signatures_probabilities.txt", sep = "")cancer_signatures <- read.table(sp_url, sep = "\t", header = TRUE)
+sp_url <- paste("http://cancer.sanger.ac.uk/cancergenome/assets/","signatures_probabilities.txt", sep = "")
+cancer_signatures = read.table(sp_url, sep = "\t", header = TRUE)
+cancer_signatures = cancer_signatures[order(cancer_signatures[,1]),]
+cancer_signatures = as.matrix(cancer_signatures[,4:33])
 QP <- findSigExposures(as.numeric(cancer_signatures[,17]),cancer_signatures60[,c('SBS17a','SBS17b')])$exposures
 d$cosine_similarity[10] <- round(cos_sim(shdp_norm[,10],((0.41*cancer_signatures60[,'SBS17a'])+(0.59*cancer_signatures60[,'SBS17b']))),digit=2)
 write.table(d,file='Fig-2b_table.txt',quote=F,sep='\t',row.names=F)
